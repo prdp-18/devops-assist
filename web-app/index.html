@@ -1,0 +1,2898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DevOps Companion App - Web Version</title>
+    
+    <!-- PWA Meta Tags -->
+    <meta name="description" content="Mobile DevOps management platform for AWS Lightsail and Google Kubernetes Engine">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="DevOps Companion">
+    <meta name="msapplication-TileColor" content="#2563eb">
+    <meta name="msapplication-config" content="/browserconfig.xml">
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json">
+    
+    <!-- Apple Touch Icons -->
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png">
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-192x192.png">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-16x16.png">
+    
+    <!-- Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('Service Worker registered successfully:', registration);
+                    })
+                    .catch((error) => {
+                        console.log('Service Worker registration failed:', error);
+                    });
+            });
+        }
+    </script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f5f5f5;
+            color: #333;
+            /* PWA optimizations */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            /* Prevent zoom on input focus on iOS */
+            -webkit-text-size-adjust: 100%;
+            /* Safe area for mobile devices */
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        /* PWA Installation Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            right: 20px;
+            background: #2563eb;
+            color: white;
+            padding: 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            display: none;
+            z-index: 1000;
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        .install-prompt.show {
+            display: block;
+        }
+        
+        .install-prompt-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .install-prompt-text {
+            flex: 1;
+            margin-right: 16px;
+        }
+        
+        .install-prompt-title {
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+        
+        .install-prompt-desc {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .install-prompt-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .install-btn {
+            background: white;
+            color: #2563eb;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .install-btn:hover {
+            background: #f8fafc;
+        }
+        
+        .dismiss-btn {
+            background: transparent;
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .dismiss-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            .container {
+                padding: 16px;
+            }
+            
+            .header {
+                padding: 16px;
+                margin-bottom: 16px;
+            }
+            
+            .login-form {
+                padding: 24px;
+                margin-bottom: 16px;
+            }
+            
+            .dashboard {
+                padding: 16px;
+            }
+            
+            .install-prompt {
+                left: 16px;
+                right: 16px;
+                bottom: 16px;
+            }
+        }
+        
+        /* Touch-friendly buttons */
+        button, .btn {
+            min-height: 44px;
+            min-width: 44px;
+            touch-action: manipulation;
+        }
+        
+        /* Prevent text selection on buttons */
+        button, .btn {
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .header {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .login-form {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .dashboard {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .cloud-selector {
+            display: flex;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .cloud-tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            background: #f8f9fa;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+        }
+
+        .cloud-tab.active {
+            background: #007AFF;
+            color: white;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 15px;
+            background: #007AFF;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: #0056b3;
+        }
+
+        .btn.danger {
+            background: #F44336;
+        }
+
+        .btn.danger:hover {
+            background: #d32f2f;
+        }
+
+        .btn.secondary {
+            background: #6c757d;
+        }
+
+        .btn.secondary:hover {
+            background: #545b62;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .status-running { background: #4CAF50; }
+        .status-stopped { background: #F44336; }
+        .status-pending { background: #FF9800; }
+        .status-terminating { background: #FF5722; }
+        .status-containercreating { background: #2196F3; }
+        .status-failed { background: #F44336; }
+        .status-error { background: #F44336; }
+        .status-unknown { background: #9E9E9E; }
+        .status-crashloopbackoff { background: #E91E63; }
+        .status-imagepullbackoff { background: #9C27B0; }
+        .status-errimagepull { background: #9C27B0; }
+
+        .resource-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 4px solid #007AFF;
+        }
+
+        .resource-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .resource-name {
+            font-weight: 600;
+            font-size: 18px;
+        }
+
+        .resource-details {
+            font-size: 14px;
+            color: #666;
+        }
+
+        .resource-details div {
+            margin-bottom: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .error {
+            background: #ffebee;
+            color: #c62828;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .success {
+            background: #e8f5e8;
+            color: #2e7d32;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 20px;
+        }
+
+        .logout-btn {
+            float: right;
+            background: #F44336;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .region-selector {
+            margin-bottom: 20px;
+        }
+
+        .region-selector select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+
+        .options-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .options-menu {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+            min-width: 150px;
+            margin-top: 5px;
+        }
+
+        .options-menu button {
+            width: 100%;
+            padding: 10px 15px;
+            border: none;
+            background: white;
+            text-align: left;
+            cursor: pointer;
+            font-size: 14px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .options-menu button:hover {
+            background: #f8f9fa;
+        }
+
+        .options-menu button:last-child {
+            border-bottom: none;
+        }
+
+        .options-menu button.danger {
+            color: #F44336;
+        }
+
+        .options-menu button.danger:hover {
+            background: #ffebee;
+        }
+
+        .options-menu button.info {
+            color: #2196F3;
+        }
+
+        .options-menu button.info:hover {
+            background: #e3f2fd;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        /* AWS Lightsail Enhanced Styles */
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding: 5px 0;
+        }
+
+        .metric-label {
+            font-weight: bold;
+            color: #666;
+        }
+
+        .metric-value {
+            color: #333;
+            font-weight: 500;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+
+        .action-buttons .btn {
+            padding: 8px 12px;
+            font-size: 12px;
+            border-radius: 4px;
+        }
+
+        .btn.disabled {
+            background: #ccc;
+            color: #666;
+            cursor: not-allowed;
+        }
+
+        .btn.small {
+            padding: 4px 8px;
+            font-size: 11px;
+        }
+
+        /* SSH Info Modal Styles */
+        .ssh-info {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            padding: 5px 0;
+        }
+
+        .info-row label {
+            font-weight: bold;
+            color: #555;
+            min-width: 100px;
+        }
+
+        .info-value {
+            color: #333;
+            font-family: 'Courier New', monospace;
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+        }
+
+        .command-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 5px;
+        }
+
+        .command-box code {
+            flex: 1;
+            background: #f0f0f0;
+            padding: 8px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            border: 1px solid #ddd;
+        }
+
+        /* System Commands Modal Styles */
+        .command-section {
+            margin-bottom: 25px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 5px;
+        }
+
+        .command-section h4 {
+            margin: 0 0 15px 0;
+            color: #333;
+            font-size: 16px;
+        }
+
+        .command-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .command-buttons .btn {
+            padding: 10px 15px;
+            font-size: 13px;
+        }
+
+        #commandOutput {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+        }
+
+        #commandOutput h4 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        #commandResult {
+            background: #fff;
+            padding: 10px;
+            border-radius: 3px;
+            border: 1px solid #ddd;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+
+        body.modal-open {
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .modal-overlay > div {
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { 
+                opacity: 0;
+                transform: translateY(-20px) scale(0.95);
+            }
+            to { 
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 DevOps Companion App</h1>
+            <p>Multi-Cloud DevOps Management</p>
+        </div>
+        
+        <!-- PWA Installation Prompt -->
+        <div class="install-prompt" id="installPrompt">
+            <div class="install-prompt-content">
+                <div class="install-prompt-text">
+                    <div class="install-prompt-title">Install DevOps Companion</div>
+                    <div class="install-prompt-desc">Get quick access to your DevOps tools</div>
+                </div>
+                <div class="install-prompt-buttons">
+                    <button class="install-btn" id="installBtn">Install</button>
+                    <button class="dismiss-btn" id="dismissBtn">Not now</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="loginForm" class="login-form">
+            <h2>Login</h2>
+            <div class="input-group">
+                <label for="username">Username:</label>
+                <input type="text" id="username" value="admin">
+            </div>
+            <div class="input-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" value="supersecret">
+            </div>
+            <button class="btn" onclick="login()">Login</button>
+        </div>
+
+        <div id="dashboard" class="dashboard">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2>DevOps Dashboard</h2>
+                <button class="logout-btn" onclick="logout()">Logout</button>
+            </div>
+
+            <div class="cloud-selector">
+                <button class="cloud-tab active" onclick="switchCloud('aws')">AWS Lightsail</button>
+                <button class="cloud-tab" onclick="switchCloud('gcp')">GCP GKE</button>
+            </div>
+
+            <div id="awsContent">
+                <h3>AWS Lightsail Instances</h3>
+                <div class="region-selector">
+                    <label for="awsRegion">Region:</label>
+                    <select id="awsRegion" onchange="loadAWSInstances()">
+                        <option value="us-east-1">us-east-1 (N. Virginia)</option>
+                        <option value="us-east-2">us-east-2 (Ohio)</option>
+                        <option value="us-west-1">us-west-1 (N. California)</option>
+                        <option value="us-west-2">us-west-2 (Oregon)</option>
+                        <option value="eu-west-1">eu-west-1 (Ireland)</option>
+                        <option value="eu-west-2">eu-west-2 (London)</option>
+                        <option value="eu-central-1">eu-central-1 (Frankfurt)</option>
+                        <option value="ap-southeast-1">ap-southeast-1 (Singapore)</option>
+                        <option value="ap-southeast-2">ap-southeast-2 (Sydney)</option>
+                        <option value="ap-northeast-1">ap-northeast-1 (Tokyo)</option>
+                        <option value="ca-central-1">ca-central-1 (Canada)</option>
+                    </select>
+                </div>
+                <button class="btn" onclick="loadAWSInstances()">Load Instances</button>
+                <div id="awsInstances"></div>
+            </div>
+
+            <div id="gcpContent" style="display: none;">
+                <h3>GCP GKE Clusters</h3>
+                <div class="region-selector">
+                    <label for="gcpLocation">Location:</label>
+                    <select id="gcpLocation" onchange="loadGCPClusters()">
+                        <optgroup label="Regions">
+                            <option value="us-central1">us-central1 (Iowa)</option>
+                            <option value="us-east1">us-east1 (S. Carolina)</option>
+                            <option value="us-west1">us-west1 (Oregon)</option>
+                            <option value="europe-west1">europe-west1 (Belgium)</option>
+                            <option value="europe-west2">europe-west2 (London)</option>
+                            <option value="asia-east1">asia-east1 (Taiwan)</option>
+                            <option value="asia-southeast1">asia-southeast1 (Singapore)</option>
+                        </optgroup>
+                        <optgroup label="Zones">
+                            <option value="us-central1-a">us-central1-a</option>
+                            <option value="us-central1-b">us-central1-b</option>
+                            <option value="us-central1-c">us-central1-c</option>
+                            <option value="us-east1-b">us-east1-b</option>
+                            <option value="us-east1-c">us-east1-c</option>
+                            <option value="us-east1-d">us-east1-d</option>
+                            <option value="us-west1-a">us-west1-a</option>
+                            <option value="us-west1-b">us-west1-b</option>
+                            <option value="us-west1-c">us-west1-c</option>
+                            <option value="europe-west1-b">europe-west1-b</option>
+                            <option value="europe-west1-c">europe-west1-c</option>
+                            <option value="europe-west1-d">europe-west1-d</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <button class="btn" onclick="loadGCPClusters()">Load Clusters</button>
+                <div id="gcpClusters"></div>
+            </div>
+        </div>
+
+        <div id="message"></div>
+    </div>
+
+    <script>
+        let authToken = localStorage.getItem('authToken');
+        const API_BASE = 'http://127.0.0.1:8000';
+
+        function showMessage(text, type = 'info') {
+            const messageDiv = document.getElementById('message');
+            messageDiv.innerHTML = `<div class="${type}">${text}</div>`;
+            setTimeout(() => {
+                messageDiv.innerHTML = '';
+            }, 5000);
+        }
+
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch(`${API_BASE}/token`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    authToken = data.access_token;
+                    localStorage.setItem('authToken', authToken);
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('dashboard').style.display = 'block';
+                    showMessage('Login successful!', 'success');
+                } else {
+                    const error = await response.json();
+                    showMessage(`Login failed: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Login error: ${error.message}`, 'error');
+            }
+        }
+
+        function logout() {
+            authToken = null;
+            localStorage.removeItem('authToken');
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('dashboard').style.display = 'none';
+            document.getElementById('awsInstances').innerHTML = '';
+            document.getElementById('gcpClusters').innerHTML = '';
+        }
+
+        function switchCloud(cloud) {
+            document.querySelectorAll('.cloud-tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.getElementById('awsContent').style.display = cloud === 'aws' ? 'block' : 'none';
+            document.getElementById('gcpContent').style.display = cloud === 'gcp' ? 'block' : 'none';
+        }
+
+        async function loadAWSInstances() {
+            if (!authToken) {
+                showMessage('Please login first', 'error');
+                return;
+            }
+
+            const region = document.getElementById('awsRegion').value;
+            const container = document.getElementById('awsInstances');
+            container.innerHTML = '<div class="loading">Loading AWS instances from ' + region + '...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/instances?region=${region}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const instances = await response.json();
+                    displayAWSInstances(instances);
+                } else {
+                    const error = await response.json();
+                    container.innerHTML = `<div class="error">Error: ${error.detail}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayAWSInstances(instances) {
+            const container = document.getElementById('awsInstances');
+            
+            if (instances.length === 0) {
+                container.innerHTML = '<div class="loading">No instances found</div>';
+                return;
+            }
+
+            container.innerHTML = instances.map(instance => `
+                <div class="resource-card">
+                    <div class="resource-header">
+                        <div class="resource-name">${instance.name}</div>
+                        <span class="status-badge status-${instance.state.toLowerCase()}">${instance.state}</span>
+                    </div>
+                    <div class="resource-details">
+                        <div class="metric-row">
+                            <span class="metric-label">Region:</span>
+                            <span class="metric-value">${instance.region}</span>
+                        </div>
+                        <div class="metric-row">
+                            <span class="metric-label">CPU:</span>
+                            <span class="metric-value">${instance.cpu_utilization}%</span>
+                        </div>
+                        <div class="action-buttons">
+                            ${instance.state === 'running' ? `
+                                <button class="btn secondary" onclick="showSSHInfo('${instance.name}')">🔗 SSH Info</button>
+                                <button class="btn secondary" onclick="showSystemCommands('${instance.name}')">⚙️ Commands</button>
+                                <button class="btn danger" onclick="rebootAWSInstance('${instance.name}')">🔄 Reboot</button>
+                            ` : `
+                                <button class="btn disabled" disabled>Instance ${instance.state}</button>
+                            `}
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function showSSHInfo(instanceName) {
+            const region = document.getElementById('awsRegion').value;
+            try {
+                const response = await fetch(`${API_BASE}/api/instances/${instanceName}/ssh-info?region=${region}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const sshInfo = await response.json();
+                    showSSHModal(sshInfo);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showSSHModal(sshInfo) {
+            const modalHtml = `
+                <div class="modal-overlay" onclick="closeModal(this)">
+                    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 600px;">
+                        <div class="modal-header">
+                            <h3>🔗 SSH Connection Info: ${sshInfo.instance_name}</h3>
+                            <button class="modal-close" onclick="closeModal(this)">✕</button>
+                        </div>
+                        <div class="modal-body" style="padding: 20px;">
+                            <div class="ssh-info">
+                                <div class="info-row">
+                                    <label>Public IP:</label>
+                                    <span class="info-value">${sshInfo.public_ip}</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>Username:</label>
+                                    <span class="info-value">${sshInfo.username}</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>SSH Key:</label>
+                                    <span class="info-value">${sshInfo.ssh_key_name}</span>
+                                </div>
+                                <div class="info-row">
+                                    <label>SSH Command:</label>
+                                    <div class="command-box">
+                                        <code>${sshInfo.ssh_command}</code>
+                                        <button class="btn small" onclick="copyToClipboard('${sshInfo.ssh_command}')">📋 Copy</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div style="margin-top: 20px; text-align: center;">
+                                <button class="btn secondary" onclick="closeModal(this)">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.classList.add('modal-open');
+        }
+
+        async function showSystemCommands(instanceName) {
+            const region = document.getElementById('awsRegion').value;
+            const modalHtml = `
+                <div class="modal-overlay" onclick="closeModal(this)">
+                    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 700px;">
+                        <div class="modal-header">
+                            <h3>⚙️ System Commands: ${instanceName}</h3>
+                            <button class="modal-close" onclick="closeModal(this)">✕</button>
+                        </div>
+                        <div class="modal-body" style="padding: 20px;">
+                            <div class="command-section">
+                                <h4>🔄 System Maintenance</h4>
+                                <div class="command-buttons">
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'sudo sync')">Sync</button>
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'sudo sh -c \\'echo 3 > /proc/sys/vm/drop_caches\\'')">Drop Caches</button>
+                                </div>
+                            </div>
+                            <div class="command-section">
+                                <h4>🚀 Bitnami Services</h4>
+                                <div class="command-buttons">
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'sudo /opt/bitnami/ctlscript.sh status')">Status</button>
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'sudo /opt/bitnami/ctlscript.sh start')">Start</button>
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'sudo /opt/bitnami/ctlscript.sh restart')">Restart</button>
+                                </div>
+                            </div>
+                            <div class="command-section">
+                                <h4>📊 System Info</h4>
+                                <div class="command-buttons">
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'free -h')">Memory</button>
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'df -h')">Disk</button>
+                                    <button class="btn secondary" onclick="executeSystemCommand('${instanceName}', 'uptime')">Uptime</button>
+                                </div>
+                            </div>
+                            <div id="commandOutput" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 5px; display: none;">
+                                <h4>Command Output:</h4>
+                                <pre id="commandResult"></pre>
+                            </div>
+                            <div style="margin-top: 20px; text-align: center;">
+                                <button class="btn secondary" onclick="closeModal(this)">Close</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.classList.add('modal-open');
+        }
+
+        async function executeSystemCommand(instanceName, command) {
+            const region = document.getElementById('awsRegion').value;
+            const outputDiv = document.getElementById('commandOutput');
+            const resultPre = document.getElementById('commandResult');
+            
+            outputDiv.style.display = 'block';
+            resultPre.innerHTML = '⏳ Executing command...';
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/instances/${instanceName}/system-command?region=${region}&command=${encodeURIComponent(command)}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    let output = `Command: ${result.command}\n`;
+                    output += `Return Code: ${result.return_code}\n`;
+                    output += `Status: ${result.status}\n\n`;
+                    
+                    if (result.stdout) {
+                        output += `STDOUT:\n${result.stdout}\n\n`;
+                    }
+                    if (result.stderr) {
+                        output += `STDERR:\n${result.stderr}\n\n`;
+                    }
+                    
+                    resultPre.innerHTML = output;
+                    
+                    if (result.status === 'success') {
+                        showMessage(`Command executed successfully on ${instanceName}`, 'success');
+                    } else {
+                        showMessage(`Command failed on ${instanceName}`, 'error');
+                    }
+                } else {
+                    const error = await response.json();
+                    resultPre.innerHTML = `Error: ${error.detail}`;
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                resultPre.innerHTML = `Error: ${error.message}`;
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showMessage('SSH command copied to clipboard!', 'success');
+            }).catch(() => {
+                showMessage('Failed to copy to clipboard', 'error');
+            });
+        }
+
+        async function rebootAWSInstance(instanceName) {
+            if (!confirm(`Are you sure you want to reboot ${instanceName}?`)) {
+                return;
+            }
+
+            const region = document.getElementById('awsRegion').value;
+            try {
+                const response = await fetch(`${API_BASE}/api/instances/${instanceName}/reboot?region=${region}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage(result.message, 'success');
+                    loadAWSInstances(); // Refresh the list
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadGCPClusters() {
+            if (!authToken) {
+                showMessage('Please login first', 'error');
+                return;
+            }
+
+            const location = document.getElementById('gcpLocation').value;
+            const container = document.getElementById('gcpClusters');
+            container.innerHTML = '<div class="loading">Loading GCP clusters from ' + location + '...</div>';
+
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters?location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const clusters = await response.json();
+                    displayGCPClusters(clusters);
+                } else {
+                    const error = await response.json();
+                    container.innerHTML = `<div class="error">Error: ${error.detail}</div>`;
+                }
+            } catch (error) {
+                container.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+            }
+        }
+
+        function displayGCPClusters(clusters) {
+            const container = document.getElementById('gcpClusters');
+            
+            if (clusters.length === 0) {
+                container.innerHTML = '<div class="loading">No clusters found</div>';
+                return;
+            }
+
+            container.innerHTML = clusters.map(cluster => `
+                <div class="resource-card">
+                    <div class="resource-header">
+                        <div class="resource-name">${cluster.name}</div>
+                        <span class="status-badge status-${cluster.status.toLowerCase()}">${cluster.status}</span>
+                    </div>
+                    <div class="resource-details">
+                        <div>Location: ${cluster.region} ${cluster.region.includes('-') ? '(Zone)' : '(Region)'}</div>
+                        <div>Nodes: ${cluster.node_count}</div>
+                        <div>Version: ${cluster.version}</div>
+                        <div style="display: flex; gap: 10px; margin-top: 10px;">
+                            <button class="btn primary" onclick="loadGCPNamespaces('${cluster.name}', '${cluster.region}')">View Namespaces</button>
+                            <button class="btn secondary" onclick="loadAllGCPPods('${cluster.name}', '${cluster.region}')">View All Pods (-A)</button>
+                            <button class="btn secondary" onclick="loadGCPNodes('${cluster.name}', '${cluster.region}')">View Nodes</button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        async function loadGCPNamespaces(clusterName, location) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces?cluster_location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const namespaces = await response.json();
+                    displayGCPNamespaces(clusterName, location, namespaces);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPNamespaces(clusterName, location, namespaces) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <h4>Namespaces in ${clusterName}</h4>
+                    <div style="display: grid; gap: 12px;">
+                        ${namespaces.map(ns => `
+                            <div style="background: white; border: 1px solid #e1e5e9; border-radius: 8px; padding: 16px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                                <div>
+                                    <div style="font-size: 16px; font-weight: 600; color: #2c3e50; margin-bottom: 4px;">${ns.name}</div>
+                                    <div style="color: #7f8c8d; font-size: 13px;">Kubernetes Namespace</div>
+                                </div>
+                                <button class="btn" onclick="loadGCPPods('${clusterName}', '${location}', '${ns.name}')" style="padding: 8px 16px; font-size: 13px; border-radius: 6px;">📦 View Pods</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        async function loadGCPPods(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const pods = await response.json();
+                    displayGCPPods(clusterName, location, namespace, pods);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadAllGCPPods(clusterName, location) {
+            showMessage(`Loading all pods across all namespaces...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/pods/all?cluster_location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const pods = await response.json();
+                    displayAllGCPPods(pods, clusterName, location);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading all pods: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading all pods: ${error.message}`, 'error');
+            }
+        }
+
+        async function loadGCPNodes(clusterName, location) {
+            showMessage(`Loading nodes in cluster ${clusterName}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/nodes?cluster_location=${location}&wide=false`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const nodes = await response.json();
+                    displayGCPNodes(nodes, clusterName, location);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading nodes: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading nodes: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPNodes(nodes, clusterName, location) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="section">
+                    <h2>🖥️ Nodes in Cluster: ${clusterName}</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Showing all nodes in the cluster (${nodes.length} total nodes)</p>
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn secondary" onclick="loadGCPNodes('${clusterName}', '${location}')">🔄 Refresh</button>
+                        <button class="btn secondary" onclick="loadGCPNodesWide('${clusterName}', '${location}')">📊 Wide View (-o wide)</button>
+                        <button class="btn secondary" onclick="loadGCPNodesTop('${clusterName}', '${location}')">📈 Top Nodes</button>
+                    </div>
+                    
+                    <div class="resource-grid">
+                        ${nodes.map(node => `
+                            <div class="resource-card" style="border-left: 4px solid ${node.status === 'Ready' ? '#4CAF50' : '#F44336'};">
+                                <div class="resource-header">
+                                    <div class="resource-name">${node.name}</div>
+                                    <span class="status-badge status-${node.status.toLowerCase()}">${node.status}</span>
+                                </div>
+                                <div class="resource-details">
+                                    <div><strong>Roles:</strong> ${node.roles}</div>
+                                    <div><strong>Age:</strong> ${node.age}</div>
+                                    <div><strong>Version:</strong> ${node.version}</div>
+                                    <div><strong>Internal IP:</strong> ${node.internal_ip}</div>
+                                    <div><strong>External IP:</strong> ${node.external_ip}</div>
+                                    <div><strong>OS Image:</strong> ${node.os_image}</div>
+                                    <div><strong>Kernel:</strong> ${node.kernel_version}</div>
+                                    <div><strong>Container Runtime:</strong> ${node.container_runtime}</div>
+                                    <div><strong>Architecture:</strong> ${node.architecture}</div>
+                                    <div><strong>OS:</strong> ${node.operating_system}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        async function loadGCPNodesWide(clusterName, location) {
+            showMessage(`Loading nodes in wide format...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/nodes?cluster_location=${location}&wide=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const nodes = await response.json();
+                    displayGCPNodesWide(nodes, clusterName, location);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading nodes: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading nodes: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPNodesWide(nodes, clusterName, location) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="section">
+                    <h2>🖥️ Nodes in Cluster: ${clusterName} (Wide View)</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Showing all nodes in wide format (${nodes.length} total nodes)</p>
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn secondary" onclick="loadGCPNodesWide('${clusterName}', '${location}')">🔄 Refresh</button>
+                        <button class="btn secondary" onclick="loadGCPNodes('${clusterName}', '${location}')">📋 Normal View</button>
+                    </div>
+                    
+                    <div class="resource-grid">
+                        ${nodes.map(node => `
+                            <div class="resource-card" style="border-left: 4px solid ${node.status === 'Ready' ? '#4CAF50' : '#F44336'};">
+                                <div class="resource-header">
+                                    <div class="resource-name">${node.name}</div>
+                                    <span class="status-badge status-${node.status.toLowerCase()}">${node.status}</span>
+                                </div>
+                                <div class="resource-details">
+                                    <div><strong>Roles:</strong> ${node.roles}</div>
+                                    <div><strong>Age:</strong> ${node.age}</div>
+                                    <div><strong>Version:</strong> ${node.version}</div>
+                                    <div><strong>Internal IP:</strong> ${node.internal_ip}</div>
+                                    <div><strong>External IP:</strong> ${node.external_ip}</div>
+                                    <div><strong>OS Image:</strong> ${node.os_image}</div>
+                                    <div><strong>Kernel:</strong> ${node.kernel_version}</div>
+                                    <div><strong>Container Runtime:</strong> ${node.container_runtime}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        async function loadGCPNodesTop(clusterName, location) {
+            showMessage(`Loading node resource usage...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/nodes/top?cluster_location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const nodesTop = await response.json();
+                    displayGCPNodesTop(nodesTop, clusterName, location);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading node resource usage: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading node resource usage: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPNodesTop(nodesTop, clusterName, location) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="section">
+                    <h2>📈 Node Resource Usage: ${clusterName}</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Showing CPU and memory usage for all nodes (${nodesTop.length} total nodes)</p>
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn secondary" onclick="loadGCPNodesTop('${clusterName}', '${location}')">🔄 Refresh</button>
+                        <button class="btn secondary" onclick="loadGCPNodes('${clusterName}', '${location}')">📋 Back to Nodes</button>
+                    </div>
+                    
+                    <div class="resource-grid">
+                        ${nodesTop.map(node => `
+                            <div class="resource-card" style="border-left: 4px solid #2196F3;">
+                                <div class="resource-header">
+                                    <div class="resource-name">${node.name}</div>
+                                    <span class="status-badge" style="background: #2196F3;">Resource Usage</span>
+                                </div>
+                                <div class="resource-details">
+                                    <div><strong>CPU Usage:</strong> ${node.cpu_usage_raw} (${node.cpu_usage.toFixed(3)} cores)</div>
+                                    <div><strong>Memory Usage:</strong> ${node.memory_usage_raw} (${node.memory_usage.toFixed(1)} MB)</div>
+                                    <div style="margin-top: 10px;">
+                                        <div style="background: #f0f0f0; border-radius: 4px; padding: 5px;">
+                                            <div style="font-size: 12px; color: #666;">CPU: ${node.cpu_usage_raw}</div>
+                                            <div style="font-size: 12px; color: #666;">Memory: ${node.memory_usage_raw}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        function displayAllGCPPods(pods, clusterName, location) {
+            const container = document.getElementById('gcpClusters');
+            
+            // Group pods by namespace
+            const podsByNamespace = {};
+            pods.forEach(pod => {
+                if (!podsByNamespace[pod.namespace]) {
+                    podsByNamespace[pod.namespace] = [];
+                }
+                podsByNamespace[pod.namespace].push(pod);
+            });
+            
+            container.innerHTML = `
+                <div class="section">
+                    <h2>📦 All Pods in Cluster: ${clusterName}</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Showing all pods across all namespaces (${pods.length} total pods)</p>
+                    
+                    ${Object.entries(podsByNamespace).map(([namespace, namespacePods]) => `
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2196F3; border-bottom: 2px solid #2196F3; padding-bottom: 5px; margin-bottom: 15px;">
+                                📁 Namespace: ${namespace} (${namespacePods.length} pods)
+                            </h3>
+                            <div class="resource-grid">
+                                ${namespacePods.map(pod => `
+                                    <div class="resource-card" style="border-left: 4px solid ${getStatusColor(pod.status.phase)};" data-pod-name="${pod.name}">
+                                        <div class="resource-header">
+                                            <div class="resource-name">${pod.name}</div>
+                                            <span class="status-badge status-${pod.status.phase.toLowerCase()}">${pod.status.phase}</span>
+                                        </div>
+                                        <div class="resource-details">
+                                            <div><strong>Namespace:</strong> ${pod.namespace}</div>
+                                            <div><strong>Ready:</strong> ${pod.status.ready ? '✅' : '❌'}</div>
+                                            <div><strong>Restarts:</strong> ${pod.status.restart_count}</div>
+                                            <div><strong>Age:</strong> ${pod.status.age || 'N/A'}</div>
+                                            <div><strong>Node:</strong> ${pod.node_name || 'N/A'}</div>
+                                            <div style="margin-top: 8px;">
+                                                <div><strong>CPU:</strong> ${formatResourceUsage(pod.containers[0].resources.cpu_usage, pod.containers[0].resources.cpu_limit, 'cores')}</div>
+                                                <div><strong>Memory:</strong> ${formatResourceUsage(pod.containers[0].resources.memory_usage, pod.containers[0].resources.memory_limit, 'MB')}</div>
+                                            </div>
+                                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                                <div class="options-dropdown">
+                                                    <button class="btn secondary" onclick="toggleOptions('${pod.name}')" style="padding: 8px 12px; font-size: 14px;">
+                                                        ⚙️ Options
+                                                    </button>
+                                                    <div id="options-${pod.name}" class="options-menu" style="display: none;">
+                                                        ${getPodOptions(pod, clusterName, location, pod.namespace)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn secondary" onclick="loadAllGCPPods('${clusterName}', '${location}')">🔄 Refresh</button>
+                        <button class="btn secondary" onclick="loadAllGCPPodsWide('${clusterName}', '${location}')">📊 Wide View (-o wide)</button>
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        async function loadAllGCPPodsWide(clusterName, location) {
+            showMessage(`Loading all pods in wide format...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/pods/all?cluster_location=${location}&wide=true`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const pods = await response.json();
+                    displayAllGCPPodsWide(pods, clusterName, location);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading all pods: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading all pods: ${error.message}`, 'error');
+            }
+        }
+
+        function displayAllGCPPodsWide(pods, clusterName, location) {
+            const container = document.getElementById('gcpClusters');
+            
+            // Group pods by namespace
+            const podsByNamespace = {};
+            pods.forEach(pod => {
+                if (!podsByNamespace[pod.namespace]) {
+                    podsByNamespace[pod.namespace] = [];
+                }
+                podsByNamespace[pod.namespace].push(pod);
+            });
+            
+            container.innerHTML = `
+                <div class="section">
+                    <h2>📦 All Pods in Cluster: ${clusterName} (Wide View)</h2>
+                    <p style="color: #666; margin-bottom: 20px;">Showing all pods across all namespaces in wide format (${pods.length} total pods)</p>
+                    
+                    ${Object.entries(podsByNamespace).map(([namespace, namespacePods]) => `
+                        <div style="margin-bottom: 30px;">
+                            <h3 style="color: #2196F3; border-bottom: 2px solid #2196F3; padding-bottom: 5px; margin-bottom: 15px;">
+                                📁 Namespace: ${namespace} (${namespacePods.length} pods)
+                            </h3>
+                            <div class="resource-grid">
+                                ${namespacePods.map(pod => `
+                                    <div class="resource-card" style="border-left: 4px solid ${getStatusColor(pod.status.phase)};" data-pod-name="${pod.name}">
+                                        <div class="resource-header">
+                                            <div class="resource-name">${pod.name}</div>
+                                            <span class="status-badge status-${pod.status.phase.toLowerCase()}">${pod.status.phase}</span>
+                                        </div>
+                                        <div class="resource-details">
+                                            <div><strong>Namespace:</strong> ${pod.namespace}</div>
+                                            <div><strong>Ready:</strong> ${pod.status.ready ? '✅' : '❌'}</div>
+                                            <div><strong>Restarts:</strong> ${pod.status.restart_count}</div>
+                                            <div><strong>Age:</strong> ${pod.status.age || 'N/A'}</div>
+                                            <div><strong>Node:</strong> ${pod.node_name || 'N/A'}</div>
+                                            <div><strong>IP:</strong> ${pod.ip || 'N/A'}</div>
+                                            <div><strong>Containers:</strong> ${pod.containers.length}</div>
+                                            <div style="margin-top: 8px;">
+                                                <div><strong>CPU:</strong> ${formatResourceUsage(pod.containers[0].resources.cpu_usage, pod.containers[0].resources.cpu_limit, 'cores')}</div>
+                                                <div><strong>Memory:</strong> ${formatResourceUsage(pod.containers[0].resources.memory_usage, pod.containers[0].resources.memory_limit, 'MB')}</div>
+                                            </div>
+                                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                                <div class="options-dropdown">
+                                                    <button class="btn secondary" onclick="toggleOptions('${pod.name}')" style="padding: 8px 12px; font-size: 14px;">
+                                                        ⚙️ Options
+                                                    </button>
+                                                    <div id="options-${pod.name}" class="options-menu" style="display: none;">
+                                                        ${getPodOptions(pod, clusterName, location, pod.namespace)}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+                    
+                    <div style="margin-bottom: 20px; display: flex; gap: 10px;">
+                        <button class="btn secondary" onclick="loadAllGCPPodsWide('${clusterName}', '${location}')">🔄 Refresh</button>
+                        <button class="btn secondary" onclick="loadAllGCPPods('${clusterName}', '${location}')">📋 Normal View</button>
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPClusters()">← Back to Clusters</button>
+                </div>
+            `;
+        }
+
+        function displayGCPPods(clusterName, location, namespace, pods) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>Pods in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${pods.map(pod => `
+                        <div data-pod-name="${pod.name}" style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid ${getStatusColor(pod.status.phase)};">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${pod.name}</strong>
+                                <span class="status-badge status-${pod.status.phase.toLowerCase()}">${pod.status.phase}</span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Ready:</strong> ${pod.containers.length > 0 ? pod.containers.filter(c => c.ready).length + '/' + pod.containers.length : '0/0'}</div>
+                                    <div><strong>Restarts:</strong> ${pod.containers.length > 0 ? Math.max(...pod.containers.map(c => c.restart_count)) : 0}</div>
+                                    <div><strong>Age:</strong> ${formatAge(pod.creation_timestamp)}</div>
+                                    <div><strong>Status:</strong> ${pod.status.phase}</div>
+                                </div>
+                                <div style="margin-top: 8px;">
+                                    <div><strong>CPU:</strong> ${formatResourceUsage(pod.containers[0].resources.cpu_usage, pod.containers[0].resources.cpu_limit, 'cores')}</div>
+                                    <div><strong>Memory:</strong> ${formatResourceUsage(pod.containers[0].resources.memory_usage, pod.containers[0].resources.memory_limit, 'MB')}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <div class="options-dropdown">
+                                    <button class="btn secondary" onclick="toggleOptions('${pod.name}')" style="padding: 8px 12px; font-size: 14px;">
+                                        ⚙️ Options
+                                    </button>
+                                    <div id="options-${pod.name}" class="options-menu" style="display: none;">
+                                        ${getPodOptions(pod, clusterName, location, namespace)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                    
+                    <div style="margin-top: 20px;">
+                        <h4>🚀 Advanced Operations</h4>
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-top: 15px;">
+                            <button class="btn" onclick="loadGCPDeployments('${clusterName}', '${location}', '${namespace}')" style="padding: 12px; text-align: center;">
+                                📦 Deployments<br><small>View & Manage</small>
+                            </button>
+                            <button class="btn" onclick="loadGCPServices('${clusterName}', '${location}', '${namespace}')" style="padding: 12px; text-align: center;">
+                                🌐 Services<br><small>View & Download</small>
+                            </button>
+                            <button class="btn" onclick="loadGCPIngresses('${clusterName}', '${location}', '${namespace}')" style="padding: 12px; text-align: center;">
+                                🔗 Ingresses<br><small>View & Manage</small>
+                            </button>
+                            <button class="btn" onclick="loadGCPSecrets('${clusterName}', '${location}', '${namespace}')" style="padding: 12px; text-align: center;">
+                                🔐 Secrets<br><small>View & Download</small>
+                            </button>
+                            <button class="btn" onclick="loadGCPServiceAccounts('${clusterName}', '${location}', '${namespace}')" style="padding: 12px; text-align: center;">
+                                👤 Service Accounts<br><small>View & Manage</small>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                </div>
+            `;
+        }
+
+        async function restartGCPPod(clusterName, location, namespace, podName) {
+            // Check if pod is already being restarted
+            const restartBtn = document.getElementById(`restart-btn-${podName}`);
+            if (restartBtn && restartBtn.disabled) {
+                showMessage(`Pod ${podName} is already being restarted`, 'error');
+                return;
+            }
+
+            if (!confirm(`Are you sure you want to restart ${podName}?`)) {
+                return;
+            }
+
+            // Disable restart button
+            if (restartBtn) {
+                restartBtn.disabled = true;
+                restartBtn.textContent = '🔄 Restarting...';
+                restartBtn.style.opacity = '0.6';
+            }
+
+            // Show restarting status immediately
+            updatePodStatus(podName, 'Terminating', 'Restarting pod...');
+            showMessage(`Restarting ${podName}...`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/restart?cluster_location=${location}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage(`Pod ${podName} restart initiated successfully`, 'success');
+                    
+                    // Start polling for status updates
+                    pollPodStatus(clusterName, location, namespace, podName);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                    updatePodStatus(podName, 'Error', 'Restart failed');
+                    
+                    // Re-enable restart button on error
+                    if (restartBtn) {
+                        restartBtn.disabled = false;
+                        restartBtn.textContent = 'Restart';
+                        restartBtn.style.opacity = '1';
+                    }
+                    
+                    // Refresh pod list to get current state
+                    setTimeout(() => {
+                        loadGCPPods(clusterName, location, namespace);
+                    }, 2000);
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+                updatePodStatus(podName, 'Error', 'Restart failed');
+                
+                // Re-enable restart button on error
+                if (restartBtn) {
+                    restartBtn.disabled = false;
+                    restartBtn.textContent = 'Restart';
+                    restartBtn.style.opacity = '1';
+                }
+                
+                // Refresh pod list to get current state
+                setTimeout(() => {
+                    loadGCPPods(clusterName, location, namespace);
+                }, 2000);
+            }
+        }
+
+        function updatePodStatus(podName, status, message = '') {
+            // Find the pod element and update its status
+            const podElements = document.querySelectorAll(`[data-pod-name="${podName}"]`);
+            podElements.forEach(element => {
+                const statusBadge = element.querySelector('.status-badge');
+                if (statusBadge) {
+                    statusBadge.textContent = status;
+                    statusBadge.className = `status-badge status-${status.toLowerCase()}`;
+                }
+                
+                // Add status message if provided
+                if (message) {
+                    let messageElement = element.querySelector('.status-message');
+                    if (!messageElement) {
+                        messageElement = document.createElement('div');
+                        messageElement.className = 'status-message';
+                        messageElement.style.cssText = 'font-size: 12px; color: #666; font-style: italic; margin-top: 5px;';
+                        element.appendChild(messageElement);
+                    }
+                    messageElement.textContent = message;
+                }
+            });
+        }
+
+        async function pollPodStatus(clusterName, location, namespace, podName) {
+            const maxAttempts = 15; // Poll for up to 2.5 minutes (10 seconds * 15)
+            let attempts = 0;
+            
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                
+                try {
+                    const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${location}`, {
+                        headers: {
+                            'Authorization': `Bearer ${authToken}`
+                        }
+                    });
+
+                    if (response.ok) {
+                        const pods = await response.json();
+                        const pod = pods.find(p => p.name === podName);
+                        
+                        if (pod) {
+                            const status = pod.status.phase;
+                            updatePodStatus(podName, status, getStatusMessage(status));
+                            
+                            // Stop polling if pod reaches a final state
+                            if (status === 'Running' || status === 'Failed' || status === 'Error' || 
+                                status === 'CrashLoopBackOff' || status === 'ImagePullBackOff' || status === 'ErrImagePull') {
+                                clearInterval(pollInterval);
+                                
+                                // Re-enable restart button
+                                const restartBtn = document.getElementById(`restart-btn-${podName}`);
+                                if (restartBtn) {
+                                    restartBtn.disabled = false;
+                                    restartBtn.textContent = '🔄 Restart Pod';
+                                    restartBtn.style.opacity = '1';
+                                }
+                                
+                                if (status === 'Running') {
+                                    showMessage(`Pod ${podName} is now running`, 'success');
+                                } else if (status === 'CrashLoopBackOff') {
+                                    showMessage(`Pod ${podName} is in CrashLoopBackOff - you can restart it`, 'error');
+                                } else if (status === 'ImagePullBackOff' || status === 'ErrImagePull') {
+                                    showMessage(`Pod ${podName} has image pull issues - you can restart it`, 'error');
+                                }
+                            }
+                        } else {
+                            // Pod not found - it might have been recreated with a new name
+                            // Check if there are any pods from the same deployment
+                            const deploymentPods = pods.filter(p => p.name.includes(podName.split('-').slice(0, -2).join('-')));
+                            
+                            if (deploymentPods.length > 0) {
+                                // Found pods from the same deployment, pod was recreated
+                                clearInterval(pollInterval);
+                                updatePodStatus(podName, 'Running', 'Pod recreated successfully');
+                                showMessage(`Pod ${podName} was recreated and is now running`, 'success');
+                                
+                                // Re-enable restart button
+                                const restartBtn = document.getElementById(`restart-btn-${podName}`);
+                                if (restartBtn) {
+                                    restartBtn.disabled = false;
+                                    restartBtn.textContent = '🔄 Restart Pod';
+                                    restartBtn.style.opacity = '1';
+                                }
+                                
+                                // Refresh the pod list to show the new pod immediately
+                                loadGCPPods(clusterName, location, namespace);
+                            }
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error polling pod status:', error);
+                }
+                
+                // Stop polling after max attempts
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    updatePodStatus(podName, 'Unknown', 'Status check timeout');
+                    showMessage(`Status check timeout for ${podName}`, 'error');
+                    
+                    // Re-enable restart button
+                    const restartBtn = document.getElementById(`restart-btn-${podName}`);
+                    if (restartBtn) {
+                        restartBtn.disabled = false;
+                        restartBtn.textContent = 'Restart';
+                        restartBtn.style.opacity = '1';
+                    }
+                }
+            }, attempts <= 3 ? 5000 : 10000); // Poll every 5 seconds for first 3 attempts, then every 10 seconds
+        }
+
+        function getStatusMessage(status) {
+            const statusMessages = {
+                'Pending': 'Pod is being scheduled',
+                'ContainerCreating': 'Creating containers',
+                'Running': 'Pod is running',
+                'Terminating': 'Pod is terminating',
+                'Failed': 'Pod failed to start',
+                'Error': 'Pod encountered an error',
+                'CrashLoopBackOff': 'Pod is crashing and restarting',
+                'ImagePullBackOff': 'Failed to pull container image',
+                'ErrImagePull': 'Error pulling container image',
+                'Unknown': 'Status unknown'
+            };
+            return statusMessages[status] || 'Checking status...';
+        }
+
+        function formatAge(creationTimestamp) {
+            if (!creationTimestamp) return 'Unknown';
+            
+            const now = new Date();
+            const created = new Date(creationTimestamp);
+            const diffMs = now - created;
+            
+            const diffSeconds = Math.floor(diffMs / 1000);
+            const diffMinutes = Math.floor(diffSeconds / 60);
+            const diffHours = Math.floor(diffMinutes / 60);
+            const diffDays = Math.floor(diffHours / 24);
+            
+            if (diffDays > 0) {
+                return `${diffDays}d${diffHours % 24}h`;
+            } else if (diffHours > 0) {
+                return `${diffHours}h${diffMinutes % 60}m`;
+            } else if (diffMinutes > 0) {
+                return `${diffMinutes}m${diffSeconds % 60}s`;
+            } else {
+                return `${diffSeconds}s`;
+            }
+        }
+
+        function getStatusColor(status) {
+            const statusColors = {
+                'Running': '#4CAF50',
+                'Pending': '#FF9800',
+                'Terminating': '#FF5722',
+                'ContainerCreating': '#2196F3',
+                'Failed': '#F44336',
+                'Error': '#F44336',
+                'CrashLoopBackOff': '#E91E63',
+                'ImagePullBackOff': '#9C27B0',
+                'ErrImagePull': '#9C27B0',
+                'Unknown': '#9E9E9E'
+            };
+            return statusColors[status] || '#9E9E9E';
+        }
+
+        function getResourceUsage(pod, type) {
+            const container = pod.containers && pod.containers[0];
+            const resources = container && container.resources;
+            
+            console.log(`getResourceUsage: pod=${pod.name}, type=${type}, container=`, container);
+            console.log(`getResourceUsage: resources=`, resources);
+            
+            if (!resources) {
+                console.log(`getResourceUsage: No resources found for pod ${pod.name}`);
+                return null;
+            }
+            
+            let value = null;
+            if (type === 'cpu_usage') value = resources.cpu_usage;
+            if (type === 'memory_usage') value = resources.memory_usage;
+            if (type === 'cpu_limit') value = resources.cpu_limit;
+            if (type === 'memory_limit') value = resources.memory_limit;
+            
+            console.log(`getResourceUsage: Returning ${type}=${value} for pod ${pod.name}`);
+            return value;
+        }
+
+        function formatResourceUsage(usage, limit, unit) {
+            // Handle NaN values
+            if (isNaN(usage) || usage === null || usage === undefined) {
+                usage = null;
+            }
+            if (isNaN(limit) || limit === null || limit === undefined) {
+                limit = null;
+            }
+            
+            // If usage is null/undefined, show N/A
+            if (usage === null) {
+                if (limit === null) {
+                    return 'No limits set';
+                } else {
+                    return `N/A / ${limit} ${unit}`;
+                }
+            }
+            
+            if (limit === null) {
+                return `${usage} ${unit} / No limit`;
+            }
+            
+            const percentage = ((usage / limit) * 100).toFixed(1);
+            return `${usage} ${unit} / ${limit} ${unit} (${percentage}%)`;
+        }
+
+        function getPodOptions(pod, clusterName, location, namespace) {
+            const options = [];
+            
+            // Restart option - available for most pod states
+            if (pod.status.phase === 'Running' || pod.status.phase === 'Pending' || 
+                pod.status.phase === 'CrashLoopBackOff' || pod.status.phase === 'ImagePullBackOff' || 
+                pod.status.phase === 'ErrImagePull') {
+                options.push(`
+                    <button class="danger" onclick="restartGCPPod('${clusterName}', '${location}', '${namespace}', '${pod.name}')" id="restart-btn-${pod.name}">
+                        🔄 Restart Pod
+                    </button>
+                `);
+            }
+            
+            // View logs option - available for all pods
+            options.push(`
+                <button class="info" onclick="viewPodLogs('${clusterName}', '${location}', '${namespace}', '${pod.name}')">
+                    📋 View Logs
+                </button>
+            `);
+            
+            // Describe pod option - available for all pods
+            options.push(`
+                <button class="info" onclick="describePod('${clusterName}', '${location}', '${namespace}', '${pod.name}')">
+                    ℹ️ Describe Pod
+                </button>
+            `);
+            
+            // Scale deployment option - only for pods from deployments
+            if (pod.name.includes('-')) {
+                options.push(`
+                    <button class="info" onclick="scaleDeployment('${clusterName}', '${location}', '${namespace}', '${pod.name}')">
+                        📈 Scale Deployment
+                    </button>
+                `);
+            }
+            
+            return options.join('');
+        }
+
+        function toggleOptions(podName) {
+            const menu = document.getElementById(`options-${podName}`);
+            const isVisible = menu.style.display !== 'none';
+            
+            // Close all other dropdowns
+            document.querySelectorAll('.options-menu').forEach(m => {
+                m.style.display = 'none';
+            });
+            
+            // Toggle current dropdown
+            menu.style.display = isVisible ? 'none' : 'block';
+        }
+
+        // Close dropdowns when clicking outside
+        document.addEventListener('click', function(event) {
+            if (!event.target.closest('.options-dropdown')) {
+                document.querySelectorAll('.options-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            }
+        });
+
+        async function viewPodLogs(clusterName, location, namespace, podName) {
+            showMessage(`Loading logs for ${podName}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/logs?cluster_location=${location}&lines=100`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showLogsModal(podName, data.logs);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading logs: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading logs: ${error.message}`, 'error');
+            }
+        }
+
+        async function describePod(clusterName, location, namespace, podName) {
+            showMessage(`Loading pod details for ${podName}...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${location}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showDescribeModal(podName, data.describe_output, data.pod_yaml);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error loading pod details: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading pod details: ${error.message}`, 'error');
+            }
+        }
+
+        async function scaleDeployment(clusterName, location, namespace, podName) {
+            const deploymentName = podName.split('-').slice(0, -2).join('-');
+            const currentReplicas = prompt(`Enter new replica count for deployment ${deploymentName}:`, '3');
+            
+            if (currentReplicas === null) return;
+            
+            const replicas = parseInt(currentReplicas);
+            if (isNaN(replicas) || replicas < 0) {
+                showMessage('Please enter a valid number of replicas', 'error');
+                return;
+            }
+            
+            showMessage(`Scaling deployment ${deploymentName} to ${replicas} replicas...`, 'info');
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments/${deploymentName}/scale?cluster_location=${location}&replicas=${replicas}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    showMessage(data.message, 'success');
+                    // Refresh pod list to show new replicas
+                    setTimeout(() => {
+                        loadGCPPods(clusterName, location, namespace);
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error scaling deployment: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error scaling deployment: ${error.message}`, 'error');
+            }
+        }
+
+        function showLogsModal(podName, logs) {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                max-width: 80%;
+                max-height: 80%;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            `;
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>📋 Logs for ${podName}</h3>
+                    <button onclick="closeModal(this)" style="background: #F44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; padding: 15px; overflow-y: auto; max-height: 60vh; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${logs || 'No logs available'}</div>
+            `;
+            
+            modal.className = 'modal-overlay';
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            document.body.classList.add('modal-open');
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modalContent.querySelector('button'));
+                }
+            });
+        }
+
+        function showDescribeModal(podName, describeOutput, podYaml) {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.style.cssText = `
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.5);
+                z-index: 2000;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            `;
+            
+            // Create modal content
+            const modalContent = document.createElement('div');
+            modalContent.style.cssText = `
+                background: white;
+                border-radius: 8px;
+                padding: 20px;
+                max-width: 90%;
+                max-height: 90%;
+                overflow: hidden;
+                display: flex;
+                flex-direction: column;
+            `;
+            
+            const yamlSection = podYaml ? `
+                <div style="margin-top: 20px;">
+                    <h4>📄 Pod YAML</h4>
+                    <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; padding: 15px; overflow-y: auto; max-height: 40vh; font-family: monospace; font-size: 11px; white-space: pre-wrap;">${JSON.stringify(podYaml, null, 2)}</div>
+                </div>
+            ` : '';
+            
+            modalContent.innerHTML = `
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                    <h3>ℹ️ Pod Details for ${podName}</h3>
+                    <button onclick="closeModal(this)" style="background: #F44336; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer;">✕ Close</button>
+                </div>
+                <div style="background: #f8f9fa; border: 1px solid #ddd; border-radius: 4px; padding: 15px; overflow-y: auto; max-height: 50vh; font-family: monospace; font-size: 12px; white-space: pre-wrap;">${describeOutput || 'No details available'}</div>
+                ${yamlSection}
+            `;
+            
+            modal.className = 'modal-overlay';
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
+            document.body.classList.add('modal-open');
+            
+            // Close modal when clicking outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    closeModal(modalContent.querySelector('button'));
+                }
+            });
+        }
+
+        function closeModal(button) {
+            const modal = button.closest('.modal-overlay');
+            if (modal) {
+                modal.remove();
+                document.body.classList.remove('modal-open');
+            }
+        }
+
+        // Close modals with Escape key
+        document.addEventListener('keydown', function(event) {
+            if (event.key === 'Escape') {
+                const modals = document.querySelectorAll('.modal-overlay');
+                modals.forEach(modal => modal.remove());
+                document.body.classList.remove('modal-open');
+            }
+        });
+
+        // Check if user is already logged in
+        function checkAuthStatus() {
+            if (authToken) {
+                document.getElementById('loginForm').style.display = 'none';
+                document.getElementById('dashboard').style.display = 'block';
+            } else {
+                document.getElementById('loginForm').style.display = 'block';
+                document.getElementById('dashboard').style.display = 'none';
+            }
+        }
+
+        // Advanced Kubernetes Operations
+        async function loadGCPDeployments(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/deployments?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const deployments = await response.json();
+                    displayGCPDeployments(clusterName, location, namespace, deployments);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading deployments: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPDeployments(clusterName, location, namespace, deployments) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>📦 Deployments in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPDeployments('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${deployments.map(deployment => `
+                        <div style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid #3498db;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${deployment.name}</strong>
+                                <span style="background: #e8f5e8; color: #2e7d32; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                    ${deployment.ready_replicas}/${deployment.replicas} Ready
+                                </span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Replicas:</strong> ${deployment.replicas}</div>
+                                    <div><strong>Available:</strong> ${deployment.available_replicas}</div>
+                                    <div><strong>Age:</strong> ${deployment.age}</div>
+                                    <div><strong>Image:</strong> ${deployment.image}</div>
+                                </div>
+                            </div>
+                        <div style="display: flex; justify-content: flex-end; margin-top: 10px; gap: 8px;">
+                            <button class="btn secondary" onclick="downloadDeploymentYaml('${clusterName}', '${location}', '${deployment.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                📥 Download YAML
+                            </button>
+                            <button class="btn secondary" onclick="editDeployment('${clusterName}', '${location}', '${deployment.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                ✏️ Edit Deployment
+                            </button>
+                            <button class="btn" onclick="rolloutDeployment('${clusterName}', '${location}', '${deployment.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                🔄 Rollout Restart
+                            </button>
+                        </div>
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')">← Back to Pods</button>
+                        <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadGCPServices(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/services?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const services = await response.json();
+                    displayGCPServices(clusterName, location, namespace, services);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading services: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPServices(clusterName, location, namespace, services) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>🌐 Services in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPServices('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${services.map(service => `
+                        <div style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid #9b59b6;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${service.name}</strong>
+                                <span style="background: #f3e5f5; color: #7b1fa2; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                    ${service.type}
+                                </span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Cluster IP:</strong> ${service.cluster_ip}</div>
+                                    <div><strong>External IP:</strong> ${service.external_ip || 'N/A'}</div>
+                                    <div><strong>Age:</strong> ${service.age}</div>
+                                    <div><strong>Ports:</strong> ${service.ports.map(p => `${p.port}:${p.targetPort}`).join(', ') || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <button class="btn secondary" onclick="downloadServiceYaml('${clusterName}', '${location}', '${service.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                    📥 Download YAML
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')">← Back to Pods</button>
+                        <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function loadGCPIngresses(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/ingresses?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const ingresses = await response.json();
+                    displayGCPIngresses(clusterName, location, namespace, ingresses);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading ingresses: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPIngresses(clusterName, location, namespace, ingresses) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>🔗 Ingresses in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPIngresses('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${ingresses.map(ingress => `
+                        <div style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid #e67e22;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${ingress.name}</strong>
+                                <span style="background: #fdf2e9; color: #d35400; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                    ${ingress.class || 'N/A'}
+                                </span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Address:</strong> ${ingress.address || 'Pending'}</div>
+                                    <div><strong>Age:</strong> ${ingress.age}</div>
+                                    <div><strong>Hosts:</strong> ${ingress.hosts.join(', ') || 'N/A'}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <button class="btn secondary" onclick="downloadIngressYaml('${clusterName}', '${location}', '${ingress.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                    📥 Download YAML
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')">← Back to Pods</button>
+                        <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        // YAML Download Functions
+        async function downloadDeploymentYaml(clusterName, location, deploymentName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/deployments/${deploymentName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    downloadYamlFile(data.yaml, `${deploymentName}-deployment.yaml`);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error downloading YAML: ${error.message}`, 'error');
+            }
+        }
+
+        async function downloadServiceYaml(clusterName, location, serviceName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/services/${serviceName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    downloadYamlFile(data.yaml, `${serviceName}-service.yaml`);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error downloading YAML: ${error.message}`, 'error');
+            }
+        }
+
+        async function downloadIngressYaml(clusterName, location, ingressName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/ingresses/${ingressName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    downloadYamlFile(data.yaml, `${ingressName}-ingress.yaml`);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error downloading YAML: ${error.message}`, 'error');
+            }
+        }
+
+        function downloadYamlFile(content, filename) {
+            const blob = new Blob([content], { type: 'text/yaml' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            showMessage(`Downloaded ${filename}`, 'success');
+        }
+
+        async function rolloutDeployment(clusterName, location, deploymentName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/deployments/${deploymentName}/rollout?cluster_location=${location}&namespace=${namespace}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showMessage(result.message, 'success');
+                    // Refresh deployments after rollout
+                    setTimeout(() => loadGCPDeployments(clusterName, location, namespace), 2000);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function editDeployment(clusterName, location, deploymentName, namespace) {
+            try {
+                // First, get the current YAML
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/deployments/${deploymentName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.yaml) {
+                        showEditDeploymentModal(clusterName, location, deploymentName, namespace, data.yaml);
+                    } else {
+                        showMessage('No YAML data received from server', 'error');
+                    }
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error: ${error.message}`, 'error');
+            }
+        }
+
+        function showEditDeploymentModal(clusterName, location, deploymentName, namespace, yamlContent) {
+            if (!yamlContent) {
+                showMessage('No YAML content available for editing', 'error');
+                return;
+            }
+            
+            const modalHtml = `
+                <div class="modal-overlay" onclick="closeModal(this)">
+                    <div class="modal-content" onclick="event.stopPropagation()" style="max-width: 90vw; max-height: 90vh; width: 1200px;">
+                        <div class="modal-header">
+                            <h3>✏️ Edit Deployment: ${deploymentName}</h3>
+                            <button class="modal-close" onclick="closeModal(this)">✕</button>
+                        </div>
+                        <div class="modal-body" style="padding: 20px;">
+                            <div style="margin-bottom: 15px;">
+                                <label style="display: block; margin-bottom: 5px; font-weight: bold;">Deployment YAML:</label>
+                                <textarea id="deploymentYaml" style="width: 100%; height: 500px; font-family: 'Courier New', monospace; font-size: 12px; border: 1px solid #ddd; border-radius: 4px; padding: 10px; resize: vertical;">${yamlContent}</textarea>
+                            </div>
+                            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 15px;">
+                                <button class="btn secondary" onclick="closeModal(this)">❌ Cancel</button>
+                                <button class="btn" onclick="saveDeploymentChanges('${clusterName}', '${location}', '${deploymentName}', '${namespace}')" id="saveDeploymentBtn">
+                                    💾 Save Changes
+                                </button>
+                            </div>
+                            <div id="saveStatus" style="margin-top: 10px; text-align: center; font-weight: bold; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            document.body.classList.add('modal-open');
+        }
+
+        async function saveDeploymentChanges(clusterName, location, deploymentName, namespace) {
+            console.log('saveDeploymentChanges called with:', {clusterName, location, deploymentName, namespace});
+            const yamlContent = document.getElementById('deploymentYaml').value;
+            console.log('YAML content length:', yamlContent.length);
+            
+            if (!yamlContent.trim()) {
+                showMessage('Please provide valid YAML content', 'error');
+                return;
+            }
+
+            // Disable save button and show loading
+            const saveBtn = document.getElementById('saveDeploymentBtn');
+            const statusDiv = document.getElementById('saveStatus');
+            
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '⏳ Saving...';
+            statusDiv.style.display = 'block';
+            statusDiv.style.color = '#2196F3';
+            statusDiv.innerHTML = '⏳ Saving deployment changes...';
+
+            try {
+                console.log('Sending PUT request to edit deployment');
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/deployments/${deploymentName}/edit?cluster_location=${location}&namespace=${namespace}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ yaml: yamlContent })
+                });
+
+                console.log('Response status:', response.status);
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('Success result:', result);
+                    
+                    // Show success in modal
+                    statusDiv.style.color = '#4CAF50';
+                    statusDiv.innerHTML = `✅ ${result.message}`;
+                    
+                    // Show success message
+                    showMessage(`✅ ${result.message}`, 'success');
+                    
+                    // Close modal after 2 seconds
+                    setTimeout(() => {
+                        closeModal(document.querySelector('.modal-overlay'));
+                        // Refresh deployments after edit
+                        setTimeout(() => {
+                            console.log('Refreshing deployments list');
+                            loadGCPDeployments(clusterName, location, namespace);
+                        }, 1000);
+                    }, 2000);
+                } else {
+                    const error = await response.json();
+                    console.error('Error response:', error);
+                    
+                    // Show error in modal
+                    statusDiv.style.color = '#f44336';
+                    statusDiv.innerHTML = `❌ Error: ${error.detail}`;
+                    
+                    // Re-enable save button
+                    saveBtn.disabled = false;
+                    saveBtn.innerHTML = '💾 Save Changes';
+                    
+                    showMessage(`❌ Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error in saveDeploymentChanges:', error);
+                
+                // Show error in modal
+                statusDiv.style.color = '#f44336';
+                statusDiv.innerHTML = `❌ Error: ${error.message}`;
+                
+                // Re-enable save button
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = '💾 Save Changes';
+                
+                showMessage(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Secrets Management
+        async function loadGCPSecrets(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/secrets?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const secrets = await response.json();
+                    displayGCPSecrets(clusterName, location, namespace, secrets);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading secrets: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPSecrets(clusterName, location, namespace, secrets) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>🔐 Secrets in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPSecrets('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${secrets.map(secret => `
+                        <div style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid #e74c3c;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${secret.name}</strong>
+                                <span style="background: #fadbd8; color: #c0392b; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                    ${secret.type}
+                                </span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Data Keys:</strong> ${secret.data_count}</div>
+                                    <div><strong>Age:</strong> ${secret.age}</div>
+                                    <div><strong>Keys:</strong> ${secret.data_keys.join(', ') || 'None'}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <button class="btn secondary" onclick="downloadSecretYaml('${clusterName}', '${location}', '${secret.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                    📥 Download YAML
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')">← Back to Pods</button>
+                        <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function downloadSecretYaml(clusterName, location, secretName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/secrets/${secretName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    downloadYamlFile(data.yaml, `${secretName}-secret.yaml`);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error downloading YAML: ${error.message}`, 'error');
+            }
+        }
+
+        // Service Accounts Management
+        async function loadGCPServiceAccounts(clusterName, location, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/serviceaccounts?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const serviceAccounts = await response.json();
+                    displayGCPServiceAccounts(clusterName, location, namespace, serviceAccounts);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error loading service accounts: ${error.message}`, 'error');
+            }
+        }
+
+        function displayGCPServiceAccounts(clusterName, location, namespace, serviceAccounts) {
+            const container = document.getElementById('gcpClusters');
+            
+            container.innerHTML = `
+                <div class="resource-card">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h4>👤 Service Accounts in ${namespace}</h4>
+                        <button class="btn secondary" onclick="loadGCPServiceAccounts('${clusterName}', '${location}', '${namespace}')" style="padding: 5px 10px; font-size: 12px;">🔄 Refresh</button>
+                    </div>
+                    ${serviceAccounts.map(sa => `
+                        <div style="margin: 10px 0; padding: 15px; background: white; border-radius: 4px; border-left: 4px solid #27ae60;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                                <strong>${sa.name}</strong>
+                                <span style="background: #d5f4e6; color: #27ae60; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                    Service Account
+                                </span>
+                            </div>
+                            <div style="font-size: 14px; color: #666; margin-bottom: 10px;">
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                    <div><strong>Secrets:</strong> ${sa.secrets_count}</div>
+                                    <div><strong>Image Pull Secrets:</strong> ${sa.image_pull_secrets_count}</div>
+                                    <div><strong>Age:</strong> ${sa.age}</div>
+                                </div>
+                            </div>
+                            <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                                <button class="btn secondary" onclick="downloadServiceAccountYaml('${clusterName}', '${location}', '${sa.name}', '${namespace}')" style="padding: 6px 12px; font-size: 12px;">
+                                    📥 Download YAML
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="btn secondary" onclick="loadGCPPods('${clusterName}', '${location}', '${namespace}')">← Back to Pods</button>
+                        <button class="btn secondary" onclick="loadGCPNamespaces('${clusterName}', '${location}')">← Back to Namespaces</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function downloadServiceAccountYaml(clusterName, location, saName, namespace) {
+            try {
+                const response = await fetch(`${API_BASE}/api/gcp/clusters/${clusterName}/serviceaccounts/${saName}/yaml?cluster_location=${location}&namespace=${namespace}`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    downloadYamlFile(data.yaml, `${saName}-serviceaccount.yaml`);
+                } else {
+                    const error = await response.json();
+                    showMessage(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                showMessage(`Error downloading YAML: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-login for demo
+        window.onload = function() {
+            // Check if already logged in
+            checkAuthStatus();
+            
+            // Auto-fill demo credentials if not logged in
+            if (!authToken) {
+                document.getElementById('username').value = 'admin';
+                document.getElementById('password').value = 'password';
+            }
+        };
+        
+        // PWA Installation Logic
+        let deferredPrompt;
+        const installPrompt = document.getElementById('installPrompt');
+        const installBtn = document.getElementById('installBtn');
+        const dismissBtn = document.getElementById('dismissBtn');
+        
+        // Listen for the beforeinstallprompt event
+        window.addEventListener('beforeinstallprompt', (e) => {
+            console.log('PWA: beforeinstallprompt event fired');
+            // Prevent the mini-infobar from appearing on mobile
+            e.preventDefault();
+            // Stash the event so it can be triggered later
+            deferredPrompt = e;
+            // Show the install prompt
+            installPrompt.classList.add('show');
+        });
+        
+        // Handle install button click
+        installBtn.addEventListener('click', async () => {
+            if (deferredPrompt) {
+                // Show the install prompt
+                deferredPrompt.prompt();
+                // Wait for the user to respond to the prompt
+                const { outcome } = await deferredPrompt.userChoice;
+                console.log(`PWA: User response to install prompt: ${outcome}`);
+                // Clear the deferredPrompt
+                deferredPrompt = null;
+                // Hide the install prompt
+                installPrompt.classList.remove('show');
+            }
+        });
+        
+        // Handle dismiss button click
+        dismissBtn.addEventListener('click', () => {
+            installPrompt.classList.remove('show');
+            // Store dismissal in localStorage to avoid showing again for a while
+            localStorage.setItem('pwa-install-dismissed', Date.now().toString());
+        });
+        
+        // Check if user previously dismissed the prompt
+        window.addEventListener('load', () => {
+            const dismissed = localStorage.getItem('pwa-install-dismissed');
+            if (dismissed) {
+                const dismissedTime = parseInt(dismissed);
+                const daysSinceDismissed = (Date.now() - dismissedTime) / (1000 * 60 * 60 * 24);
+                // Show prompt again after 7 days
+                if (daysSinceDismissed < 7) {
+                    installPrompt.style.display = 'none';
+                }
+            }
+        });
+        
+        // Listen for app installed event
+        window.addEventListener('appinstalled', () => {
+            console.log('PWA: App was installed');
+            installPrompt.classList.remove('show');
+            // Show success message
+            showMessage('🎉 DevOps Companion installed successfully!', 'success');
+        });
+        
+        // Check if app is already installed
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            console.log('PWA: App is running in standalone mode');
+            // Hide install prompt if already installed
+            installPrompt.style.display = 'none';
+        }
+        
+        // Handle online/offline status
+        function updateOnlineStatus() {
+            const status = navigator.onLine ? 'online' : 'offline';
+            console.log(`PWA: Connection status: ${status}`);
+            
+            if (!navigator.onLine) {
+                showMessage('📱 You are offline. Some features may be limited.', 'warning');
+            }
+        }
+        
+        window.addEventListener('online', updateOnlineStatus);
+        window.addEventListener('offline', updateOnlineStatus);
+        
+        // Initialize online status
+        updateOnlineStatus();
+        
+        // Register for push notifications
+        if ('Notification' in window && 'serviceWorker' in navigator) {
+            Notification.requestPermission().then((permission) => {
+                if (permission === 'granted') {
+                    console.log('PWA: Push notifications enabled');
+                } else {
+                    console.log('PWA: Push notifications denied');
+                }
+            });
+        }
+    </script>
+</body>
+</html>

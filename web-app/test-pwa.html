@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PWA Testing Tool</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-section {
+            background: white;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .test-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .test-item:last-child {
+            border-bottom: none;
+        }
+        .status {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .pass { background: #d4edda; color: #155724; }
+        .fail { background: #f8d7da; color: #721c24; }
+        .pending { background: #fff3cd; color: #856404; }
+        button {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background: #1d4ed8; }
+        .console-output {
+            background: #1e1e1e;
+            color: #00ff00;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin: 10px 0;
+        }
+        .instructions {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 DevOps Companion PWA Testing Tool</h1>
+    
+    <div class="instructions">
+        <h3>📋 Testing Instructions:</h3>
+        <ol>
+            <li>Open this page in Chrome/Edge: <code>http://127.0.0.1:3000/test-pwa.html</code></li>
+            <li>Click "Run All Tests" to check PWA features</li>
+            <li>Follow the manual testing steps below</li>
+            <li>Check the console output for detailed results</li>
+        </ol>
+    </div>
+
+    <div class="test-section">
+        <h2>🔍 Automatic Tests</h2>
+        <button onclick="runAllTests()">Run All Tests</button>
+        <button onclick="clearResults()">Clear Results</button>
+        
+        <div class="test-item">
+            <span>Service Worker Support</span>
+            <span class="status pending" id="sw-support">PENDING</span>
+        </div>
+        
+        <div class="test-item">
+            <span>Service Worker Registration</span>
+            <span class="status pending" id="sw-registration">PENDING</span>
+        </div>
+        
+        <div class="test-item">
+            <span>Manifest Loading</span>
+            <span class="status pending" id="manifest-load">PENDING</span>
+        </div>
+        
+        <div class="test-item">
+            <span>Install Prompt Support</span>
+            <span class="status pending" id="install-prompt">PENDING</span>
+        </div>
+        
+        <div class="test-item">
+            <span>Notification Support</span>
+            <span class="status pending" id="notification-support">PENDING</span>
+        </div>
+        
+        <div class="test-item">
+            <span>Cache API Support</span>
+            <span class="status pending" id="cache-support">PENDING</span>
+        </div>
+        
+        <div class="console-output" id="console-output">
+            <div>Click "Run All Tests" to start testing...</div>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>📱 Manual Testing Steps</h2>
+        
+        <h3>1. PWA Installation Test</h3>
+        <div class="instructions">
+            <p><strong>Desktop (Chrome/Edge):</strong></p>
+            <ol>
+                <li>Go to: <code>http://127.0.0.1:3000</code></li>
+                <li>Look for install prompt at bottom of screen</li>
+                <li>Click "Install" button</li>
+                <li>App should open in standalone mode</li>
+            </ol>
+            
+            <p><strong>Mobile (Android Chrome):</strong></p>
+            <ol>
+                <li>Open in mobile Chrome browser</li>
+                <li>Tap menu → "Add to Home screen"</li>
+                <li>App icon should appear on home screen</li>
+                <li>Tap icon to open in standalone mode</li>
+            </ol>
+        </div>
+        
+        <h3>2. Offline Functionality Test</h3>
+        <div class="instructions">
+            <ol>
+                <li>Install the PWA first</li>
+                <li>Open Chrome DevTools (F12)</li>
+                <li>Go to Network tab</li>
+                <li>Check "Offline" checkbox</li>
+                <li>Refresh the page</li>
+                <li>Should show offline page, not browser error</li>
+            </ol>
+        </div>
+        
+        <h3>3. Service Worker Test</h3>
+        <div class="instructions">
+            <ol>
+                <li>Open Chrome DevTools (F12)</li>
+                <li>Go to Application tab</li>
+                <li>Click "Service Workers"</li>
+                <li>Should see "activated and running" status</li>
+                <li>Check console for registration messages</li>
+            </ol>
+        </div>
+        
+        <h3>4. Manifest Test</h3>
+        <div class="instructions">
+            <ol>
+                <li>Open Chrome DevTools (F12)</li>
+                <li>Go to Application tab</li>
+                <li>Click "Manifest"</li>
+                <li>Should see app details and icons</li>
+                <li>No errors should be shown</li>
+            </ol>
+        </div>
+    </div>
+
+    <div class="test-section">
+        <h2>🚀 Quick Actions</h2>
+        <button onclick="openMainApp()">Open Main App</button>
+        <button onclick="testNotifications()">Test Notifications</button>
+        <button onclick="checkCache()">Check Cache</button>
+        <button onclick="simulateOffline()">Simulate Offline</button>
+    </div>
+
+    <script>
+        let consoleOutput = document.getElementById('console-output');
+        
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            consoleOutput.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            consoleOutput.scrollTop = consoleOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus(testId, status, message = '') {
+            const element = document.getElementById(testId);
+            element.textContent = status;
+            element.className = `status ${status.toLowerCase()}`;
+            if (message) log(message);
+        }
+        
+        function runAllTests() {
+            log('🧪 Starting PWA tests...');
+            clearResults();
+            
+            // Test 1: Service Worker Support
+            if ('serviceWorker' in navigator) {
+                updateStatus('sw-support', 'PASS', '✅ Service Worker API supported');
+            } else {
+                updateStatus('sw-support', 'FAIL', '❌ Service Worker API not supported');
+            }
+            
+            // Test 2: Service Worker Registration
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                if (registrations.length > 0) {
+                    updateStatus('sw-registration', 'PASS', '✅ Service Worker registered');
+                } else {
+                    updateStatus('sw-registration', 'FAIL', '❌ No Service Worker registered');
+                }
+            });
+            
+            // Test 3: Manifest Loading
+            fetch('/manifest.json')
+                .then(response => {
+                    if (response.ok) {
+                        updateStatus('manifest-load', 'PASS', '✅ Manifest loads successfully');
+                    } else {
+                        updateStatus('manifest-load', 'FAIL', '❌ Manifest failed to load');
+                    }
+                })
+                .catch(error => {
+                    updateStatus('manifest-load', 'FAIL', `❌ Manifest error: ${error.message}`);
+                });
+            
+            // Test 4: Install Prompt Support
+            if ('BeforeInstallPromptEvent' in window) {
+                updateStatus('install-prompt', 'PASS', '✅ Install prompt supported');
+            } else {
+                updateStatus('install-prompt', 'PASS', '✅ Install prompt will work (event not fired yet)');
+            }
+            
+            // Test 5: Notification Support
+            if ('Notification' in window) {
+                updateStatus('notification-support', 'PASS', '✅ Notifications supported');
+            } else {
+                updateStatus('notification-support', 'FAIL', '❌ Notifications not supported');
+            }
+            
+            // Test 6: Cache API Support
+            if ('caches' in window) {
+                updateStatus('cache-support', 'PASS', '✅ Cache API supported');
+            } else {
+                updateStatus('cache-support', 'FAIL', '❌ Cache API not supported');
+            }
+            
+            log('🏁 Tests completed! Check results above.');
+        }
+        
+        function clearResults() {
+            const statuses = ['sw-support', 'sw-registration', 'manifest-load', 'install-prompt', 'notification-support', 'cache-support'];
+            statuses.forEach(id => {
+                updateStatus(id, 'PENDING', '');
+            });
+            consoleOutput.innerHTML = '<div>Tests cleared. Click "Run All Tests" to start...</div>';
+        }
+        
+        function openMainApp() {
+            window.open('/', '_blank');
+        }
+        
+        async function testNotifications() {
+            if ('Notification' in window) {
+                const permission = await Notification.requestPermission();
+                if (permission === 'granted') {
+                    new Notification('DevOps Companion Test', {
+                        body: 'PWA notifications are working!',
+                        icon: '/icons/icon-192x192.png'
+                    });
+                    log('✅ Test notification sent');
+                } else {
+                    log('❌ Notification permission denied');
+                }
+            } else {
+                log('❌ Notifications not supported');
+            }
+        }
+        
+        async function checkCache() {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                log(`📦 Cache names: ${cacheNames.join(', ')}`);
+                
+                for (const cacheName of cacheNames) {
+                    const cache = await caches.open(cacheName);
+                    const keys = await cache.keys();
+                    log(`📦 ${cacheName}: ${keys.length} items cached`);
+                }
+            } else {
+                log('❌ Cache API not supported');
+            }
+        }
+        
+        function simulateOffline() {
+            log('📶 Simulating offline mode...');
+            log('💡 Open Chrome DevTools → Network tab → Check "Offline"');
+            log('💡 Then refresh the main app to test offline functionality');
+        }
+        
+        // Auto-run tests on page load
+        window.addEventListener('load', () => {
+            log('🚀 PWA Testing Tool loaded');
+            log('💡 Click "Run All Tests" to check PWA features');
+        });
+        
+        // Listen for install prompt
+        window.addEventListener('beforeinstallprompt', (e) => {
+            log('📱 Install prompt available!');
+            log('💡 Go to main app to see the install prompt');
+        });
+        
+        // Listen for app installation
+        window.addEventListener('appinstalled', () => {
+            log('🎉 App installed successfully!');
+        });
+    </script>
+</body>
+</html>

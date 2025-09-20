@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: devops-companion-backend
+  labels:
+    app: devops-companion-backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: devops-companion-backend
+  template:
+    metadata:
+      labels:
+        app: devops-companion-backend
+    spec:
+      containers:
+      - name: backend
+        image: devops-companion:latest
+        ports:
+        - containerPort: 8000
+        env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: access-key-id
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: aws-credentials
+              key: secret-access-key
+        - name: AWS_DEFAULT_REGION
+          value: "us-east-1"
+        - name: GCP_PROJECT_ID
+          valueFrom:
+            secretKeyRef:
+              name: gcp-credentials
+              key: project-id
+        volumeMounts:
+        - name: ssh-keys
+          mountPath: /root/.ssh
+          readOnly: true
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: ssh-keys
+        secret:
+          secretName: ssh-keys
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: devops-companion-backend-service
+spec:
+  selector:
+    app: devops-companion-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: aws-credentials
+type: Opaque
+data:
+  access-key-id: <base64-encoded-access-key>
+  secret-access-key: <base64-encoded-secret-key>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: gcp-credentials
+type: Opaque
+data:
+  project-id: <base64-encoded-project-id>
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ssh-keys
+type: Opaque
+data:
+  lightsail-default-ohio.pem: <base64-encoded-ssh-key>
+  lightsail-default-virginia.pem: <base64-encoded-ssh-key>
+  lightsail-default-oregon.pem: <base64-encoded-ssh-key>
+
