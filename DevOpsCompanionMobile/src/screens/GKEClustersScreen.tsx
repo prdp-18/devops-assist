@@ -20,6 +20,9 @@ import ActionModal from '../components/ActionModal';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
 import EmptyState from '../components/EmptyState';
+import GKENamespacesScreen from './GKENamespacesScreen';
+import GKEPodsScreen from './GKEPodsScreen';
+import GKEAdvancedOperationsScreen from './GKEAdvancedOperationsScreen';
 
 
 export default function GKEClustersScreen() {
@@ -29,10 +32,14 @@ export default function GKEClustersScreen() {
   const [selectedCluster, setSelectedCluster] = useState<GKECluster | null>(null);
   const [modalVisible, setModalVisible] = useState(false);
   
-  // Debug modal state changes
-  useEffect(() => {
-    console.log('Modal visibility changed:', modalVisible);
-  }, [modalVisible]);
+  // Navigation state
+  const [currentView, setCurrentView] = useState<'clusters' | 'namespaces' | 'pods' | 'advanced'>('clusters');
+  const [navigationStack, setNavigationStack] = useState<{
+    clusterName?: string;
+    location?: string;
+    namespace?: string;
+    resourceType?: 'deployments' | 'services' | 'ingresses' | 'secrets' | 'service-accounts';
+  }>({});
   
   // Location selector
   const [selectedLocation, setSelectedLocation] = useState('us-central1');
@@ -99,24 +106,17 @@ export default function GKEClustersScreen() {
   const handleViewNamespaces = async (cluster: GKECluster) => {
     try {
       setIsGettingNamespaces(true);
-      const namespaces = await GKEService.getNamespaces(cluster.name, selectedLocation);
-      
-      const namespaceList = namespaces.slice(0, 10).join('\n');
-      const moreCount = namespaces.length > 10 ? `\n... and ${namespaces.length - 10} more` : '';
-      
-      Alert.alert(
-        'Cluster Namespaces',
-        `Cluster: ${cluster.name}\n\n` +
-        `Total Namespaces: ${namespaces.length}\n\n` +
-        `Namespaces:\n${namespaceList}${moreCount}`,
-        [{ text: 'OK' }]
-      );
+      setNavigationStack({
+        clusterName: cluster.name,
+        location: selectedLocation,
+      });
+      setCurrentView('namespaces');
+      setModalVisible(false);
     } catch (error) {
-      console.error('Failed to get namespaces:', error);
-      Alert.alert('Error', 'Failed to get cluster namespaces. Please try again.');
+      console.error('Failed to navigate to namespaces:', error);
+      Alert.alert('Error', `Failed to navigate to namespaces: ${(error as Error).message}`);
     } finally {
       setIsGettingNamespaces(false);
-      setModalVisible(false); // Close modal after action completes
     }
   };
 
@@ -214,6 +214,34 @@ export default function GKEClustersScreen() {
     </TouchableOpacity>
   );
 
+  // Navigation functions
+  const navigateBack = () => {
+    switch (currentView) {
+      case 'namespaces':
+        setCurrentView('clusters');
+        setNavigationStack({});
+        break;
+      case 'pods':
+        setCurrentView('namespaces');
+        setNavigationStack(prev => ({ ...prev, namespace: undefined }));
+        break;
+      case 'advanced':
+        setCurrentView('pods');
+        setNavigationStack(prev => ({ ...prev, resourceType: undefined }));
+        break;
+    }
+  };
+
+  const navigateToPods = (namespace: string) => {
+    setNavigationStack(prev => ({ ...prev, namespace }));
+    setCurrentView('pods');
+  };
+
+  const navigateToAdvanced = (resourceType: 'deployments' | 'services' | 'ingresses' | 'secrets' | 'service-accounts') => {
+    setNavigationStack(prev => ({ ...prev, resourceType }));
+    setCurrentView('advanced');
+  };
+
   const getModalActions = () => {
     if (!selectedCluster) return [];
     
@@ -245,14 +273,58 @@ export default function GKEClustersScreen() {
         loading: isGettingNodes,
       },
       {
-        id: 'deployments',
-        title: 'View Deployments',
-        icon: 'layers' as keyof typeof Ionicons.glyphMap,
-        onPress: () => handleViewDeployments(selectedCluster),
+        id: 'all-pods',
+        title: 'View All Pods (-A)',
+        icon: 'cube' as keyof typeof Ionicons.glyphMap,
+        onPress: () => {
+          setNavigationStack({
+            clusterName: selectedCluster.name,
+            location: selectedLocation,
+            namespace: 'all',
+          });
+          setCurrentView('pods');
+          setModalVisible(false);
+        },
         disabled: isGettingHealth || isGettingNamespaces || isGettingNodes,
       },
     ];
   };
+
+  // Render different views based on navigation state
+  if (currentView === 'namespaces' && navigationStack.clusterName && navigationStack.location) {
+    return (
+      <GKENamespacesScreen
+        clusterName={navigationStack.clusterName}
+        location={navigationStack.location}
+        onBack={navigateBack}
+        onViewPods={navigateToPods}
+      />
+    );
+  }
+
+  if (currentView === 'pods' && navigationStack.clusterName && navigationStack.location && navigationStack.namespace) {
+    return (
+      <GKEPodsScreen
+        clusterName={navigationStack.clusterName}
+        location={navigationStack.location}
+        namespace={navigationStack.namespace}
+        onBack={navigateBack}
+        onNavigateToAdvanced={navigateToAdvanced}
+      />
+    );
+  }
+
+  if (currentView === 'advanced' && navigationStack.clusterName && navigationStack.location && navigationStack.namespace && navigationStack.resourceType) {
+    return (
+      <GKEAdvancedOperationsScreen
+        clusterName={navigationStack.clusterName}
+        location={navigationStack.location}
+        namespace={navigationStack.namespace}
+        resourceType={navigationStack.resourceType}
+        onBack={navigateBack}
+      />
+    );
+  }
 
   if (isLoading && clusters.length === 0) {
     return (

@@ -424,3 +424,60 @@ Configure resource limits in the backend for:
 - API request timeout
 - Memory usage limits
 - Concurrent request limits
+
+GKE Functionality Completely Redesigned!
+I've completely redesigned the mobile GKE interface to match the web app's hierarchical navigation system. Here's what I've implemented:
+🔄 New Hierarchical Navigation System
+1. Cluster Level (GKEClustersScreen.tsx - Updated)
+View Namespaces - Navigate to namespace list
+View All Pods (-A) - View pods across all namespaces
+View Nodes - Show cluster node details
+View Cluster Health - Display cluster health metrics
+2. Namespace Level (GKENamespacesScreen.tsx - New)
+Lists all namespaces in the cluster
+Each namespace has a "View Pods" button
+Clean card-based layout matching web app
+3. Pod Level (GKEPodsScreen.tsx - New)
+Shows pods in the selected namespace
+Pod options: Restart Pod, View Logs, Describe Pod, Scale Deployment
+Advanced Operations section with buttons for:
+Deployments (View & Manage)
+Services (View & Download)
+Ingresses (View & Manage)
+Secrets (View & Download)
+Service Accounts (View & Manage)
+4. Advanced Operations Level (GKEAdvancedOperationsScreen.tsx - New)
+Resource-specific management (deployments, services, etc.)
+Download YAML functionality
+Edit Deployment with live YAML editor
+Real-time YAML editing and deployment
+🔧 Enhanced GKEService
+Added comprehensive API methods:
+getPods(), restartPod(), getPodLogs(), describePod()
+scaleDeployment(), getServices(), getIngresses()
+getSecrets(), getServiceAccounts()
+getResourceYaml(), updateResourceYaml()
+�� Key Features Matching Web App
+✅ Hierarchical Navigation - Proper drill-down from clusters → namespaces → pods → advanced ops
+✅ Real-time Operations - Pod restart, scaling, YAML editing
+✅ Advanced Operations - All resource types with proper actions
+✅ YAML Editor - Live editing and deployment of Kubernetes resources
+✅ Proper Navigation - Back buttons and breadcrumb-style navigation
+✅ Loading States - Visual feedback for all operations
+✅ Error Handling - Comprehensive error messages
+🚀 Ready to Test!
+The mobile GKE functionality now matches the web app's comprehensive feature set. You can:
+Navigate through the hierarchy exactly like the web app
+Perform all the same operations - pod management, scaling, YAML editing
+Access advanced operations for all Kubernetes resource types
+Edit and deploy resources with real-time YAML editing
+The interface now provides the same powerful GKE management capabilities as the web version, with proper mobile-optimized navigation and touch-friendly controls! 🎉
+
+
+ cd /home/pradeep/devops-toolkit/DevOpsCompanionMobile && pkill -f expo && npx expo start --tunnel
+
+ cd /home/pradeep/devops-toolkit/DevOpsCompanionMobile && npm install --legacy-peer-deps
+
+ $ cd /home/pradeep/devops-toolkit && ./setup-mobile.sh docker
+
+  cd /home/pradeep/devops-toolkit && docker compose -f docker-compose.mobile.yml up --build -d

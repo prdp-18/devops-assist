@@ -1,0 +1,229 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  RefreshControl,
+  Alert,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
+import { GKEService } from '../services/GKEService';
+import StatusBadge from '../components/StatusBadge';
+import LoadingIndicator from '../components/LoadingIndicator';
+import EmptyState from '../components/EmptyState';
+
+interface GKENamespace {
+  name: string;
+  status?: string;
+  creationTimestamp?: string;
+}
+
+interface GKENamespacesScreenProps {
+  clusterName: string;
+  location: string;
+  onBack: () => void;
+  onViewPods: (namespace: string) => void;
+}
+
+export default function GKENamespacesScreen({ 
+  clusterName, 
+  location, 
+  onBack, 
+  onViewPods 
+}: GKENamespacesScreenProps) {
+  const [namespaces, setNamespaces] = useState<GKENamespace[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  useEffect(() => {
+    loadNamespaces();
+  }, []);
+
+  const loadNamespaces = async () => {
+    try {
+      setIsLoading(true);
+      console.log('Loading namespaces for cluster:', clusterName, 'location:', location);
+      const data = await GKEService.getNamespaces(clusterName, location);
+      console.log('Loaded namespaces:', data.length, data);
+      
+      // Convert string array to namespace objects
+      const namespaceObjects = data.map(name => ({ name }));
+      setNamespaces(namespaceObjects);
+    } catch (error) {
+      console.error('Failed to load namespaces:', error);
+      Alert.alert('Error', `Failed to load namespaces: ${(error as Error).message}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await loadNamespaces();
+    setRefreshing(false);
+  };
+
+  const NamespaceCard = ({ namespace }: { namespace: GKENamespace }) => (
+    <TouchableOpacity
+      style={styles.namespaceCard}
+      onPress={() => onViewPods(namespace.name)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.namespaceHeader}>
+        <View style={styles.namespaceInfo}>
+          <Text style={styles.namespaceName}>{namespace.name}</Text>
+          <Text style={styles.namespaceType}>Kubernetes Namespace</Text>
+        </View>
+        <View style={styles.namespaceActions}>
+          <TouchableOpacity
+            style={styles.viewPodsButton}
+            onPress={() => onViewPods(namespace.name)}
+          >
+            <Ionicons name="cube" size={16} color="#2563eb" />
+            <Text style={styles.viewPodsText}>View Pods</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  if (isLoading && namespaces.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LoadingIndicator message="Loading namespaces..." fullScreen />
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={onBack} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#2563eb" />
+        </TouchableOpacity>
+        <View style={styles.headerInfo}>
+          <Text style={styles.headerTitle}>Namespaces</Text>
+          <Text style={styles.headerSubtitle}>in {clusterName}</Text>
+        </View>
+        <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
+          <Ionicons name="refresh" size={24} color="#666" />
+        </TouchableOpacity>
+      </View>
+
+      <FlatList
+        data={namespaces}
+        keyExtractor={(item) => item.name}
+        renderItem={({ item }) => <NamespaceCard namespace={item} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+        contentContainerStyle={styles.listContainer}
+        ListEmptyComponent={
+          <EmptyState
+            icon="folder-outline"
+            title="No namespaces found"
+            subtitle="Pull to refresh or check your cluster configuration"
+            onAction={onRefresh}
+          />
+        }
+      />
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e1e5e9',
+  },
+  backButton: {
+    padding: 8,
+    marginRight: 8,
+  },
+  headerInfo: {
+    flex: 1,
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: '#666',
+  },
+  refreshButton: {
+    padding: 8,
+  },
+  listContainer: {
+    padding: 16,
+  },
+  namespaceCard: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 12,
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
+    } : {
+      shadowColor: '#000',
+      shadowOffset: {
+        width: 0,
+        height: 2,
+      },
+      shadowOpacity: 0.1,
+      shadowRadius: 4,
+      elevation: 3,
+    }),
+  },
+  namespaceHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  namespaceInfo: {
+    flex: 1,
+  },
+  namespaceName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2c3e50',
+    marginBottom: 4,
+  },
+  namespaceType: {
+    fontSize: 13,
+    color: '#7f8c8d',
+  },
+  namespaceActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewPodsButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f0f9ff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e0f2fe',
+  },
+  viewPodsText: {
+    fontSize: 13,
+    color: '#2563eb',
+    marginLeft: 4,
+    fontWeight: '500',
+  },
+});

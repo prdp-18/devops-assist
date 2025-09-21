@@ -384,4 +384,171 @@ export class GKEService {
       throw error;
     }
   }
+
+  /**
+   * Get pods for a specific namespace
+   */
+  static async getPods(clusterName: string, clusterLocation: string, namespace: string): Promise<GKEPod[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get pods:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Restart a pod
+   */
+  static async restartPod(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<void> {
+    try {
+      await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/restart?cluster_location=${clusterLocation}`,
+        'POST'
+      );
+    } catch (error) {
+      console.error('Failed to restart pod:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get pod logs
+   */
+  static async getPodLogs(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<string> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/logs?cluster_location=${clusterLocation}`
+      );
+      return response.logs || '';
+    } catch (error) {
+      console.error('Failed to get pod logs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Describe a pod
+   */
+  static async describePod(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<string> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${clusterLocation}`
+      );
+      return response.description || '';
+    } catch (error) {
+      console.error('Failed to describe pod:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Scale a deployment
+   */
+  static async scaleDeployment(clusterName: string, clusterLocation: string, namespace: string, deploymentName: string, replicas: number): Promise<void> {
+    try {
+      await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments/${deploymentName}/scale?cluster_location=${clusterLocation}`,
+        'POST',
+        { replicas }
+      );
+    } catch (error) {
+      console.error('Failed to scale deployment:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get services for a namespace
+   */
+  static async getServices(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/services?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get services:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get ingresses for a namespace
+   */
+  static async getIngresses(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/ingresses?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get ingresses:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get secrets for a namespace
+   */
+  static async getSecrets(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/secrets?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get secrets:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get service accounts for a namespace
+   */
+  static async getServiceAccounts(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/service-accounts?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get service accounts:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get resource YAML
+   */
+  static async getResourceYaml(clusterName: string, clusterLocation: string, namespace: string, resourceType: string, resourceName: string): Promise<string> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/${resourceType}/${resourceName}/yaml?cluster_location=${clusterLocation}`
+      );
+      return response.yaml || '';
+    } catch (error) {
+      console.error('Failed to get resource YAML:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update resource YAML
+   */
+  static async updateResourceYaml(clusterName: string, clusterLocation: string, namespace: string, resourceType: string, resourceName: string, yaml: string): Promise<void> {
+    try {
+      await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/${resourceType}/${resourceName}/yaml?cluster_location=${clusterLocation}`,
+        'PUT',
+        { yaml }
+      );
+    } catch (error) {
+      console.error('Failed to update resource YAML:', error);
+      throw error;
+    }
+  }
 }
