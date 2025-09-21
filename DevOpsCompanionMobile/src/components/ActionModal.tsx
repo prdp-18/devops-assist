@@ -58,13 +58,6 @@ export default function ActionModal({
   const handleActionPress = (action: ActionItem, event: any) => {
     const currentTime = Date.now();
     console.log('ActionModal: handleActionPress called for action:', action.id, 'canInteract:', canInteract);
-    console.log('ActionModal: Event details:', {
-      type: event?.type,
-      target: event?.target?.tagName,
-      isTrusted: event?.isTrusted,
-      timeStamp: event?.timeStamp,
-      timeSinceLastClick: currentTime - lastClickTime
-    });
     
     if (!canInteract) {
       console.log('ActionModal: Ignoring action press - not ready for interaction yet');
@@ -79,11 +72,8 @@ export default function ActionModal({
     
     setLastClickTime(currentTime);
     
-    // Check if this is a real user interaction
-    if (!event?.isTrusted) {
-      console.log('ActionModal: Ignoring non-trusted event');
-      return;
-    }
+    // In React Native, we can't rely on isTrusted property
+    // Instead, we use the canInteract state and timing checks
     
     if (!action.disabled) {
       console.log('ActionModal: Calling action.onPress()');
@@ -183,14 +173,16 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingTop: 20,
-    maxHeight: '80%',
+    height: '85%',
+    width: '98%',
+    maxWidth: 600,
   },
   modalHeader: {
     flexDirection: 'row',

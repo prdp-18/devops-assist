@@ -63,12 +63,23 @@ export default function AWSInstancesScreen() {
     loadInstances();
   }, []);
 
+  // Debug modal visibility changes
+  useEffect(() => {
+    console.log('ActionModal visibility changed:', modalVisible);
+  }, [modalVisible]);
+
+  useEffect(() => {
+    console.log('OutputModal visibility changed:', outputModalVisible);
+  }, [outputModalVisible]);
+
   const loadInstances = async (forceRefresh: boolean = false) => {
     try {
       setIsLoading(true);
+      console.log('Loading AWS instances, forceRefresh:', forceRefresh);
       
       // Use cache unless force refresh is requested
       const data = await AWSService.getAllInstancesFromAllRegions(!forceRefresh);
+      console.log('Loaded instances:', data.length, data);
       setInstances(data);
       
     } catch (error) {
@@ -86,6 +97,7 @@ export default function AWSInstancesScreen() {
   };
 
   const handleRebootInstance = async (instance: AWSInstance) => {
+    console.log('handleRebootInstance called for:', instance.name);
     // Show confirmation modal first
     setRebootInstance(instance);
     setRebootModalVisible(true);
@@ -133,7 +145,11 @@ export default function AWSInstancesScreen() {
   const handleViewSSHInfo = async (instance: AWSInstance) => {
     try {
       setIsGettingSSHInfo(true);
-      console.log('Getting SSH info for:', instance.name, instance.region);
+      console.log('handleViewSSHInfo called for:', instance.name, instance.region);
+      
+      // Close the action modal first
+      setModalVisible(false);
+      
       const sshInfoData = await AWSService.getSSHInfo(instance.name, instance.region);
       
       console.log('SSH info received:', sshInfoData);
@@ -150,6 +166,11 @@ export default function AWSInstancesScreen() {
   };
 
   const handleShowSystemCommands = async (instance: AWSInstance) => {
+    console.log('handleShowSystemCommands called for:', instance.name);
+    
+    // Close the action modal first
+    setModalVisible(false);
+    
     // Show the command selection modal
     setSelectedInstance(instance);
     setIsShowingCommandSelection(true);
@@ -270,14 +291,25 @@ export default function AWSInstancesScreen() {
     );
   };
 
-  const InstanceCard = ({ instance }: { instance: AWSInstance }) => (
-    <TouchableOpacity
-      style={styles.instanceCard}
-      onPress={() => {
-        setSelectedInstance(instance);
-        setModalVisible(true);
-      }}
-    >
+  const InstanceCard = ({ instance }: { instance: AWSInstance }) => {
+    console.log('Rendering InstanceCard for:', instance.name);
+    return (
+      <TouchableOpacity
+        style={styles.instanceCard}
+        onPress={() => {
+          console.log('AWS Instance card clicked:', instance.name);
+          console.log('Setting selectedInstance and opening modal');
+          setSelectedInstance(instance);
+          setModalVisible(true);
+        }}
+        activeOpacity={0.7}
+        accessible={true}
+        accessibilityLabel={`AWS Instance ${instance.name}`}
+        accessibilityRole="button"
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+        delayPressIn={0}
+        delayPressOut={0}
+      >
       <View style={styles.instanceHeader}>
         <View style={styles.instanceInfo}>
           <Text style={styles.instanceName}>{instance.name}</Text>
@@ -298,10 +330,12 @@ export default function AWSInstancesScreen() {
           </View>
         )}
       </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   const getModalActions = () => {
+    console.log('getModalActions called, selectedInstance:', selectedInstance?.name);
     if (!selectedInstance) return [];
 
     return [
@@ -386,7 +420,10 @@ export default function AWSInstancesScreen() {
       <FlatList
         data={instances}
         keyExtractor={(item) => item.name}
-        renderItem={({ item }) => <InstanceCard instance={item} />}
+        renderItem={({ item }) => {
+          console.log('FlatList rendering item:', item.name);
+          return <InstanceCard instance={item} />;
+        }}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
         }
@@ -407,7 +444,10 @@ export default function AWSInstancesScreen() {
         title={selectedInstance?.name || ''}
         subtitle="Instance Actions"
         actions={getModalActions()}
-        onClose={() => setModalVisible(false)}
+        onClose={() => {
+          console.log('ActionModal onClose called');
+          setModalVisible(false);
+        }}
       />
 
       {/* Output Modal (SSH Info, Command Selection, or Command Output) */}
@@ -415,7 +455,10 @@ export default function AWSInstancesScreen() {
         visible={outputModalVisible}
         transparent={true}
         animationType="slide"
-        onRequestClose={() => setOutputModalVisible(false)}
+        onRequestClose={() => {
+          console.log('OutputModal onRequestClose called');
+          setOutputModalVisible(false);
+        }}
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
@@ -432,10 +475,15 @@ export default function AWSInstancesScreen() {
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalBody} showsVerticalScrollIndicator={true}>
+            <ScrollView 
+              style={styles.modalBody} 
+              showsVerticalScrollIndicator={true}
+              contentContainerStyle={{ flexGrow: 1 }}
+            >
               {/* Command Selection View */}
               {isShowingCommandSelection && (
                 <View style={styles.commandSelectionContainer}>
+                  {console.log('Rendering Command Selection for:', selectedInstance?.name)}
                   <Text style={styles.commandSelectionTitle}>Select a system command to execute:</Text>
                   
                   {getCategorizedCommands().map((category) => (
@@ -477,6 +525,7 @@ export default function AWSInstancesScreen() {
               {/* SSH Info Display */}
               {outputContent?.public_ip && (
                 <View style={styles.sshInfoContainer}>
+                  {console.log('Rendering SSH Info Display for:', outputContent.instance_name)}
                   <View style={styles.sshInfoItem}>
                     <Text style={styles.sshInfoLabel}>Instance:</Text>
                     <Text style={styles.sshInfoValue}>{sanitizeText(outputContent.instance_name)}</Text>
@@ -749,14 +798,16 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderRadius: 20,
     paddingTop: 20,
-    maxHeight: '85%',
+    height: '85%',
+    width: '98%',
+    maxWidth: 600,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -778,34 +829,34 @@ const styles = StyleSheet.create({
     marginLeft: 16,
   },
   modalBody: {
-    padding: 24,
+    padding: 32,
     flex: 1,
   },
   sshInfoContainer: {
-    gap: 16,
+    gap: 20,
   },
   sshInfoItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingVertical: 8,
+    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#f0f0f0',
   },
   sshInfoLabel: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: '600',
     color: '#333',
     flex: 1,
   },
   sshInfoValue: {
-    fontSize: 16,
+    fontSize: 18,
     color: '#666',
     flex: 2,
     textAlign: 'right',
   },
   sshCommand: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#2563eb',
     flex: 2,
     textAlign: 'right',
@@ -902,8 +953,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     marginTop: 8,
-    maxHeight: 200,
-    overflow: 'hidden',
+    minHeight: 100,
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
