@@ -1,0 +1,173 @@
+import * as SecureStore from 'expo-secure-store';
+import { Platform } from 'react-native';
+
+// Use different URLs based on platform
+const API_BASE_URL = Platform.OS === 'web' 
+  ? 'http://127.0.0.1:8000'  // Web uses localhost
+  : 'http://216.172.152.215:8000';  // Mobile uses computer's IP address
+const TOKEN_KEY = 'devops_companion_token';
+
+// Web-compatible storage functions
+const isWeb = Platform.OS === 'web';
+
+const webStorage = {
+  async setItem(key: string, value: string): Promise<void> {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.setItem(key, value);
+    }
+  },
+  
+  async getItem(key: string): Promise<string | null> {
+    if (typeof localStorage !== 'undefined') {
+      return localStorage.getItem(key);
+    }
+    return null;
+  },
+  
+  async removeItem(key: string): Promise<void> {
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(key);
+    }
+  }
+};
+
+export class AuthService {
+  /**
+   * Login with username and password
+   */
+  static async login(username: string, password: string): Promise<string | null> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `username=${encodeURIComponent(username)}&password=${encodeURIComponent(password)}`,
+      });
+
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+
+      const data = await response.json();
+      const token = data.access_token;
+
+      if (token) {
+        await this.storeToken(token);
+        return token;
+      }
+
+      return null;
+    } catch (error) {
+      console.error('Login error:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store JWT token securely
+   */
+  static async storeToken(token: string): Promise<void> {
+    try {
+      if (isWeb) {
+        await webStorage.setItem(TOKEN_KEY, token);
+      } else {
+        await SecureStore.setItemAsync(TOKEN_KEY, token);
+      }
+    } catch (error) {
+      console.error('Failed to store token:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get stored JWT token
+   */
+  static async getStoredToken(): Promise<string | null> {
+    try {
+      if (isWeb) {
+        return await webStorage.getItem(TOKEN_KEY);
+      } else {
+        return await SecureStore.getItemAsync(TOKEN_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to get stored token:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Clear stored token
+   */
+  static async clearStoredToken(): Promise<void> {
+    try {
+      if (isWeb) {
+        await webStorage.removeItem(TOKEN_KEY);
+      } else {
+        await SecureStore.deleteItemAsync(TOKEN_KEY);
+      }
+    } catch (error) {
+      console.error('Failed to clear token:', error);
+    }
+  }
+
+  /**
+   * Verify if token is still valid
+   */
+  static async verifyToken(token: string): Promise<boolean> {
+    try {
+      const response = await fetch(`${API_BASE_URL}/health`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+
+      return response.ok;
+    } catch (error) {
+      console.error('Token verification failed:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Make authenticated API request
+   */
+  static async authenticatedRequest(
+    endpoint: string,
+    options: RequestInit = {}
+  ): Promise<Response> {
+    const token = await this.getStoredToken();
+    
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+      ...options.headers,
+    };
+
+    return fetch(`${API_BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  }
+
+  /**
+   * Logout user
+   */
+  static async logout(): Promise<void> {
+    await this.clearStoredToken();
+  }
+
+  /**
+   * Check if user is authenticated
+   */
+  static async isAuthenticated(): Promise<boolean> {
+    const token = await this.getStoredToken();
+    if (!token) return false;
+    
+    return await this.verifyToken(token);
+  }
+}

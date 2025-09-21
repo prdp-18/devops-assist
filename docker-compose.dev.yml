@@ -1,0 +1,76 @@
+version: '3.8'
+
+# Development overrides for docker-compose.yml
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.dev.yml up
+
+services:
+  backend:
+    # Override for development
+    volumes:
+      # Mount source code for hot reload
+      - ./backend:/app:ro
+      # SSH Keys
+      - ./ssh-keys:/home/appuser/.ssh:ro
+      # GCP credentials
+      - ${GCP_SERVICE_ACCOUNT_KEY_PATH:-./gcp-credentials.json}:/app/gcp-credentials.json:ro
+      # Development logs
+      - ./logs:/app/logs
+    
+    environment:
+      # Development settings
+      - DEBUG=True
+      - LOG_LEVEL=DEBUG
+      - RELOAD=True
+    
+    # Override command for development with auto-reload
+    command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload", "--log-level", "debug"]
+    
+    # Expose additional ports for debugging
+    ports:
+      - "8000:8000"
+      - "5678:5678"  # Debugger port
+
+  frontend:
+    # Development nginx config
+    volumes:
+      - ./web-app:/usr/share/nginx/html:ro
+      - ./nginx.dev.conf:/etc/nginx/nginx.conf:ro
+    
+    # Additional development ports
+    ports:
+      - "3000:80"
+      - "3001:81"  # Additional port for testing
+
+  # Development tools
+  dev-tools:
+    image: alpine:latest
+    container_name: devops-companion-dev-tools
+    volumes:
+      - ./:/workspace:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: ["tail", "-f", "/dev/null"]
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - devops-network
+
+  # Database for development (if needed)
+  postgres-dev:
+    image: postgres:15-alpine
+    container_name: devops-companion-postgres-dev
+    environment:
+      - POSTGRES_DB=devops_companion_dev
+      - POSTGRES_USER=devops
+      - POSTGRES_PASSWORD=dev_password
+    volumes:
+      - postgres_dev_data:/var/lib/postgresql/data
+      - ./database/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "5432:5432"
+    networks:
+      - devops-network
+
+volumes:
+  postgres_dev_data:
+
