@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -60,6 +60,7 @@ export default function GKEAdvancedOperationsScreen({
   const [yamlContent, setYamlContent] = useState('');
   const [isEditingYaml, setIsEditingYaml] = useState(false);
   const [isCapsLockOn, setIsCapsLockOn] = useState(false);
+  const textInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
     loadResources();
@@ -363,40 +364,69 @@ export default function GKEAdvancedOperationsScreen({
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
                 <View style={styles.textInputContainer}>
-                  <TextInput
-                    key={`yaml-input-${isCapsLockOn ? 'enter' : 'done'}`}
-                    style={styles.yamlInput}
-                    value={yamlContent}
-                    onChangeText={setYamlContent}
-                    multiline
-                    textAlignVertical="top"
-                    fontFamily="monospace"
-                    onBlur={() => Keyboard.dismiss()}
-                    onSubmitEditing={() => {
-                      if (isCapsLockOn) {
-                        // In caps mode, add newline instead of dismissing
+                  {isCapsLockOn ? (
+                    // ENTER mode TextInput
+                    <TextInput
+                      ref={textInputRef}
+                      key="yaml-input-enter"
+                      style={styles.yamlInput}
+                      value={yamlContent}
+                      onChangeText={setYamlContent}
+                      multiline
+                      textAlignVertical="top"
+                      fontFamily="monospace"
+                      onBlur={() => Keyboard.dismiss()}
+                      onSubmitEditing={() => {
+                        // In ENTER mode, add newline
                         setYamlContent(prev => prev + '\n');
-                      } else {
-                        // In done mode, dismiss keyboard
+                      }}
+                      returnKeyType="default"
+                      blurOnSubmit={false}
+                      keyboardType="default"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      enablesReturnKeyAutomatically={false}
+                    />
+                  ) : (
+                    // DONE mode TextInput
+                    <TextInput
+                      ref={textInputRef}
+                      key="yaml-input-done"
+                      style={styles.yamlInput}
+                      value={yamlContent}
+                      onChangeText={setYamlContent}
+                      multiline
+                      textAlignVertical="top"
+                      fontFamily="monospace"
+                      onBlur={() => Keyboard.dismiss()}
+                      onSubmitEditing={() => {
+                        // In DONE mode, dismiss keyboard
                         Keyboard.dismiss();
-                      }
-                    }}
-                    returnKeyType={isCapsLockOn ? "default" : "done"}
-                    blurOnSubmit={!isCapsLockOn}
-                    keyboardType="default"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    enablesReturnKeyAutomatically={false}
-                  />
+                      }}
+                      returnKeyType="done"
+                      blurOnSubmit={true}
+                      keyboardType="default"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      enablesReturnKeyAutomatically={false}
+                    />
+                  )}
                   <View style={styles.keyboardControls}>
                     <TouchableOpacity
                       style={[styles.toggleButton, isCapsLockOn && styles.toggleButtonActive]}
-                      onPress={() => setIsCapsLockOn(!isCapsLockOn)}
+                      onPress={() => {
+                        setIsCapsLockOn(!isCapsLockOn);
+                        // Dismiss and re-focus to force keyboard update
+                        Keyboard.dismiss();
+                        setTimeout(() => {
+                          textInputRef.current?.focus();
+                        }, 200);
+                      }}
                     >
                       <Ionicons 
                         name={isCapsLockOn ? "return-up" : "checkmark"} 
                         size={14} 
-                        color={isCapsLockOn ? "#fff" : "#fff"} 
+                        color="#fff"
                       />
                       <Text style={styles.toggleButtonText}>
                         {isCapsLockOn ? 'ENTER' : 'DONE'}
