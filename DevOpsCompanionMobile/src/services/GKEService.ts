@@ -323,7 +323,17 @@ export class GKEService {
       const response = await AuthService.authenticatedRequest(
         `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${clusterLocation}`
       );
-      return response.description || '';
+      
+      // The API returns describe_output and pod_yaml fields
+      let output = '';
+      if (response.describe_output) {
+        output += `=== Pod Description ===\n${response.describe_output}\n\n`;
+      }
+      if (response.pod_yaml) {
+        output += `=== Pod YAML ===\n${response.pod_yaml}`;
+      }
+      
+      return output || 'No pod details available';
     } catch (error) {
       console.error('Failed to describe pod:', error);
       throw error;
