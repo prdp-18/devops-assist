@@ -146,62 +146,8 @@ export class GKEService {
   /**
    * Get all pods across all namespaces
    */
-  static async getAllPods(clusterName: string, clusterLocation: string): Promise<GKEPod[]> {
-    try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/pods/all?cluster_location=${clusterLocation}`
-      );
-      
-      return response;
-    } catch (error) {
-      console.error('Failed to get all pods:', error);
-      throw error;
-    }
-  }
 
-  /**
-   * Restart a pod
-   */
-  static async restartPod(
-    clusterName: string,
-    namespace: string,
-    podName: string,
-    clusterLocation: string
-  ): Promise<boolean> {
-    try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/restart?cluster_location=${clusterLocation}`,
-        { method: 'POST' }
-      );
-      
-      return response;
-    } catch (error) {
-      console.error('Failed to restart pod:', error);
-      throw error;
-    }
-  }
 
-  /**
-   * Delete a pod
-   */
-  static async deletePod(
-    clusterName: string,
-    namespace: string,
-    podName: string,
-    clusterLocation: string
-  ): Promise<boolean> {
-    try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}?cluster_location=${clusterLocation}`,
-        { method: 'DELETE' }
-      );
-      
-      return response;
-    } catch (error) {
-      console.error('Failed to delete pod:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get pod logs
@@ -268,31 +214,6 @@ export class GKEService {
     }
   }
 
-  /**
-   * Scale a deployment
-   */
-  static async scaleDeployment(
-    clusterName: string,
-    namespace: string,
-    deploymentName: string,
-    replicas: number,
-    clusterLocation: string
-  ): Promise<boolean> {
-    try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments/${deploymentName}/scale?cluster_location=${clusterLocation}`,
-        {
-          method: 'POST',
-          body: JSON.stringify({ replicas }),
-        }
-      );
-      
-      return response;
-    } catch (error) {
-      console.error('Failed to scale deployment:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get cluster health summary
