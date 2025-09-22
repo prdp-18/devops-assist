@@ -14,6 +14,8 @@ import {
   Keyboard,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
@@ -112,8 +114,40 @@ export default function GKEAdvancedOperationsScreen({
     
     try {
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
+      
+      // Create filename based on resource type and name
+      const filename = `${selectedResource.name}-${resourceType}.yaml`;
+      
+      // Write YAML content to a temporary file
+      const fileUri = FileSystem.documentDirectory + filename;
+      await FileSystem.writeAsStringAsync(fileUri, yaml);
+      
+      // Share/download the file
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri, {
+          mimeType: 'text/yaml',
+          dialogTitle: `Download ${filename}`,
+        });
+        Alert.alert('Success', `Downloaded ${filename}`);
+      } else {
+        // Fallback: copy to clipboard
+        await Clipboard.setStringAsync(yaml);
+        Alert.alert('Success', `YAML copied to clipboard (${filename})`);
+      }
+      
+      setActionsModalVisible(false);
+    } catch (error) {
+      Alert.alert('Error', `Failed to download YAML: ${(error as Error).message}`);
+    }
+  };
+
+  const handleViewYaml = async () => {
+    if (!selectedResource) return;
+    
+    try {
+      const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
-      setIsEditingYaml(false); // Set to view mode for download
+      setIsEditingYaml(false); // Set to view mode
       setYamlModalVisible(true);
       setActionsModalVisible(false);
     } catch (error) {
@@ -272,6 +306,14 @@ export default function GKEAdvancedOperationsScreen({
               </TouchableOpacity>
             </View>
             <View style={styles.modalBody}>
+              <TouchableOpacity
+                style={styles.actionButton}
+                onPress={handleViewYaml}
+              >
+                <Ionicons name="eye" size={20} color="#2563eb" />
+                <Text style={styles.actionText}>View YAML</Text>
+              </TouchableOpacity>
+              
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={handleDownloadYaml}
