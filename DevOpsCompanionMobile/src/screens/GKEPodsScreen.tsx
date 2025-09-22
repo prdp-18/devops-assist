@@ -51,6 +51,7 @@ export default function GKEPodsScreen({
   const [optionsModalVisible, setOptionsModalVisible] = useState(false);
   const [podDetailsModalVisible, setPodDetailsModalVisible] = useState(false);
   const [podDetails, setPodDetails] = useState<any>(null);
+  const [showAdvancedOperations, setShowAdvancedOperations] = useState(false);
 
   useEffect(() => {
     loadPods();
@@ -64,12 +65,19 @@ export default function GKEPodsScreen({
       let data: GKEPod[];
       if (namespace === 'all') {
         // Load all pods across all namespaces
+        console.log('Calling getAllPods API...');
         data = await GKEService.getAllPods(clusterName, location);
         console.log('Loaded all pods:', data.length, data);
       } else {
         // Load pods for specific namespace
+        console.log('Calling getPods API for namespace:', namespace);
         data = await GKEService.getPods(clusterName, location, namespace);
         console.log('Loaded pods for namespace:', data.length, data);
+      }
+      
+      if (!data || !Array.isArray(data)) {
+        console.error('Invalid data received:', data);
+        data = [];
       }
       
       setPods(data);
@@ -253,57 +261,70 @@ export default function GKEPodsScreen({
 
       {/* Advanced Operations Section */}
       {onNavigateToAdvanced && (
-        <View style={styles.advancedOperations}>
-          <View style={styles.advancedOperationsHeader}>
-            <Ionicons name="rocket" size={20} color="#2563eb" />
-            <Text style={styles.advancedOperationsTitle}>Advanced Operations</Text>
-          </View>
-          <View style={styles.advancedOperationsGrid}>
-            <TouchableOpacity
-              style={styles.advancedOperationButton}
-              onPress={() => onNavigateToAdvanced('deployments')}
-            >
-              <Ionicons name="layers" size={24} color="#2563eb" />
-              <Text style={styles.advancedOperationText}>Deployments</Text>
-              <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.advancedOperationButton}
-              onPress={() => onNavigateToAdvanced('services')}
-            >
-              <Ionicons name="globe" size={24} color="#059669" />
-              <Text style={styles.advancedOperationText}>Services</Text>
-              <Text style={styles.advancedOperationSubtext}>View & Download</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.advancedOperationButton}
-              onPress={() => onNavigateToAdvanced('ingresses')}
-            >
-              <Ionicons name="link" size={24} color="#7c3aed" />
-              <Text style={styles.advancedOperationText}>Ingresses</Text>
-              <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.advancedOperationButton}
-              onPress={() => onNavigateToAdvanced('secrets')}
-            >
-              <Ionicons name="lock-closed" size={24} color="#dc2626" />
-              <Text style={styles.advancedOperationText}>Secrets</Text>
-              <Text style={styles.advancedOperationSubtext}>View & Download</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity
-              style={styles.advancedOperationButton}
-              onPress={() => onNavigateToAdvanced('service-accounts')}
-            >
-              <Ionicons name="person" size={24} color="#ea580c" />
-              <Text style={styles.advancedOperationText}>Service Accounts</Text>
-              <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
-            </TouchableOpacity>
-          </View>
+        <View style={styles.advancedOperationsContainer}>
+          <TouchableOpacity
+            style={styles.advancedOperationsToggle}
+            onPress={() => setShowAdvancedOperations(!showAdvancedOperations)}
+          >
+            <View style={styles.advancedOperationsHeader}>
+              <Ionicons name="rocket" size={20} color="#2563eb" />
+              <Text style={styles.advancedOperationsTitle}>Advanced Operations</Text>
+            </View>
+            <Ionicons 
+              name={showAdvancedOperations ? "chevron-up" : "chevron-down"} 
+              size={20} 
+              color="#666" 
+            />
+          </TouchableOpacity>
+          
+          {showAdvancedOperations && (
+            <View style={styles.advancedOperationsGrid}>
+              <TouchableOpacity
+                style={styles.advancedOperationButton}
+                onPress={() => onNavigateToAdvanced('deployments')}
+              >
+                <Ionicons name="layers" size={24} color="#2563eb" />
+                <Text style={styles.advancedOperationText}>Deployments</Text>
+                <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.advancedOperationButton}
+                onPress={() => onNavigateToAdvanced('services')}
+              >
+                <Ionicons name="globe" size={24} color="#059669" />
+                <Text style={styles.advancedOperationText}>Services</Text>
+                <Text style={styles.advancedOperationSubtext}>View & Download</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.advancedOperationButton}
+                onPress={() => onNavigateToAdvanced('ingresses')}
+              >
+                <Ionicons name="link" size={24} color="#7c3aed" />
+                <Text style={styles.advancedOperationText}>Ingresses</Text>
+                <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.advancedOperationButton}
+                onPress={() => onNavigateToAdvanced('secrets')}
+              >
+                <Ionicons name="lock-closed" size={24} color="#dc2626" />
+                <Text style={styles.advancedOperationText}>Secrets</Text>
+                <Text style={styles.advancedOperationSubtext}>View & Download</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={styles.advancedOperationButton}
+                onPress={() => onNavigateToAdvanced('service-accounts')}
+              >
+                <Ionicons name="person" size={24} color="#ea580c" />
+                <Text style={styles.advancedOperationText}>Service Accounts</Text>
+                <Text style={styles.advancedOperationSubtext}>View & Manage</Text>
+              </TouchableOpacity>
+            </View>
+          )}
         </View>
       )}
 
@@ -535,11 +556,10 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     lineHeight: 20,
   },
-  advancedOperations: {
+  advancedOperationsContainer: {
     backgroundColor: '#fff',
     margin: 16,
     borderRadius: 12,
-    padding: 16,
     ...(Platform.OS === 'web' ? {
       boxShadow: '0px 2px 4px rgba(0, 0, 0, 0.1)',
     } : {
@@ -553,10 +573,17 @@ const styles = StyleSheet.create({
       elevation: 3,
     }),
   },
+  advancedOperationsToggle: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
   advancedOperationsHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 16,
   },
   advancedOperationsTitle: {
     fontSize: 18,
@@ -568,6 +595,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    padding: 16,
   },
   advancedOperationButton: {
     width: '48%',
