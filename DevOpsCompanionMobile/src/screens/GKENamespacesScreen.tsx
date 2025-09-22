@@ -21,6 +21,7 @@ interface GKENamespace {
   id: string;
   status?: string;
   creationTimestamp?: string;
+  labels?: any;
 }
 
 interface GKENamespacesScreenProps {
@@ -51,11 +52,27 @@ export default function GKENamespacesScreen({
       const data = await GKEService.getNamespaces(clusterName, location);
       console.log('Loaded namespaces:', data.length, data);
       
-      // Convert string array to namespace objects with unique keys
-      const namespaceObjects = data.map((name, index) => ({ 
-        name, 
-        id: `${name}-${index}` // Create unique ID to prevent key conflicts
-      }));
+      // Handle namespace objects from API response
+      const namespaceObjects = data.map((namespace, index) => {
+        // If namespace is already an object, use it directly
+        if (typeof namespace === 'object' && namespace !== null) {
+          return {
+            name: namespace.name || 'Unknown',
+            id: `${namespace.name || 'unknown'}-${index}`,
+            status: namespace.status,
+            creationTimestamp: namespace.creation_timestamp,
+            labels: namespace.labels
+          };
+        }
+        // If namespace is a string, convert it to object
+        return {
+          name: namespace,
+          id: `${namespace}-${index}`,
+          status: undefined,
+          creationTimestamp: undefined,
+          labels: undefined
+        };
+      });
       setNamespaces(namespaceObjects);
     } catch (error) {
       console.error('Failed to load namespaces:', error);

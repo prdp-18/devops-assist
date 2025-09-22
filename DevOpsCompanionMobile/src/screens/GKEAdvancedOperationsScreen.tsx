@@ -234,7 +234,7 @@ export default function GKEAdvancedOperationsScreen({
 
       <FlatList
         data={resources}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
         renderItem={({ item }) => <ResourceCard resource={item} />}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />

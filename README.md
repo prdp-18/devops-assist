@@ -481,3 +481,5 @@ The interface now provides the same powerful GKE management capabilities as the 
  $ cd /home/pradeep/devops-toolkit && ./setup-mobile.sh docker
 
   cd /home/pradeep/devops-toolkit && docker compose -f docker-compose.mobile.yml up --build -d
+
+  uvicorn main:app --host 0.0.0.0 --port 8000

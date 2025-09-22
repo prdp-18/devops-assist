@@ -223,7 +223,7 @@ export default function GKEPodsScreen({
 
       <FlatList
         data={pods}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item, index) => `${item.name}-${index}`}
         renderItem={({ item }) => <PodCard pod={item} />}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
