@@ -40,10 +40,17 @@ export default function GKENamespacesScreen({
   const [namespaces, setNamespaces] = useState<GKENamespace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [namespacePodCounts, setNamespacePodCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     loadNamespaces();
   }, []);
+
+  useEffect(() => {
+    if (namespaces.length > 0) {
+      loadPodCounts();
+    }
+  }, [namespaces]);
 
   const loadNamespaces = async () => {
     try {
@@ -82,35 +89,66 @@ export default function GKENamespacesScreen({
     }
   };
 
-  const onRefresh = async () => {
+  const loadPodCounts = async () => {
+    try {
+      console.log('Loading pod counts for namespaces...');
+      const podCounts: Record<string, number> = {};
+      
+      // Load pod counts for each namespace in parallel
+      const promises = namespaces.map(async (namespace) => {
+        try {
+          const pods = await GKEService.getPods(clusterName, location, namespace.name);
+          podCounts[namespace.name] = pods.length;
+          console.log(`Namespace ${namespace.name}: ${pods.length} pods`);
+        } catch (error) {
+          console.error(`Failed to load pods for namespace ${namespace.name}:`, error);
+          podCounts[namespace.name] = 0;
+        }
+      });
+      
+      await Promise.all(promises);
+      setNamespacePodCounts(podCounts);
+      console.log('Pod counts loaded:', podCounts);
+    } catch (error) {
+      console.error('Failed to load pod counts:', error);
+    }
+  };
+
+const onRefresh = async () => {
     setRefreshing(true);
     await loadNamespaces();
     setRefreshing(false);
   };
 
-  const NamespaceCard = ({ namespace }: { namespace: GKENamespace }) => (
-    <TouchableOpacity
-      style={styles.namespaceCard}
-      onPress={() => onViewPods(namespace.name)}
-      activeOpacity={0.7}
-    >
-      <View style={styles.namespaceHeader}>
-        <View style={styles.namespaceInfo}>
-          <Text style={styles.namespaceName}>{namespace.name}</Text>
-          <Text style={styles.namespaceType}>Kubernetes Namespace</Text>
+  const NamespaceCard = ({ namespace }: { namespace: GKENamespace }) => {
+    const podCount = namespacePodCounts[namespace.name] ?? '...';
+    
+    return (
+      <TouchableOpacity
+        style={styles.namespaceCard}
+        onPress={() => onViewPods(namespace.name)}
+        activeOpacity={0.7}
+      >
+        <View style={styles.namespaceHeader}>
+          <View style={styles.namespaceInfo}>
+            <Text style={styles.namespaceName}>{namespace.name}</Text>
+            <Text style={styles.namespaceType}>
+              Kubernetes Namespace • {podCount} pod{podCount !== 1 ? 's' : ''}
+            </Text>
+          </View>
+          <View style={styles.namespaceActions}>
+            <TouchableOpacity
+              style={styles.viewPodsButton}
+              onPress={() => onViewPods(namespace.name)}
+            >
+              <Ionicons name="cube" size={16} color="#2563eb" />
+              <Text style={styles.viewPodsText}>View Pods</Text>
+            </TouchableOpacity>
+          </View>
         </View>
-        <View style={styles.namespaceActions}>
-          <TouchableOpacity
-            style={styles.viewPodsButton}
-            onPress={() => onViewPods(namespace.name)}
-          >
-            <Ionicons name="cube" size={16} color="#2563eb" />
-            <Text style={styles.viewPodsText}>View Pods</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
+      </TouchableOpacity>
+    );
+  };
 
   if (isLoading && namespaces.length === 0) {
     return (
