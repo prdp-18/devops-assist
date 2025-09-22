@@ -95,35 +95,40 @@ export default function GKEPodsScreen({
   };
 
   useEffect(() => {
+    console.log('GKEPodsScreen: useEffect triggered with:', { clusterName, location, namespace });
     loadPods();
-  }, []);
+  }, [clusterName, location, namespace]);
 
   const loadPods = async () => {
     try {
       setIsLoading(true);
-      console.log('Loading pods for cluster:', clusterName, 'namespace:', namespace);
+      console.log('GKEPodsScreen: Loading pods for cluster:', clusterName, 'namespace:', namespace, 'location:', location);
       
       let data: GKEPod[];
       if (namespace === 'all') {
         // Load all pods across all namespaces
-        console.log('Calling getAllPods API...');
+        console.log('GKEPodsScreen: Calling getAllPods API...');
         data = await GKEService.getAllPods(clusterName, location);
-        console.log('Loaded all pods:', data.length, data);
+        console.log('GKEPodsScreen: Loaded all pods:', data.length, data);
       } else {
         // Load pods for specific namespace
-        console.log('Calling getPods API for namespace:', namespace);
+        console.log('GKEPodsScreen: Calling getPods API for namespace:', namespace);
+        console.log('GKEPodsScreen: API endpoint will be:', `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${location}`);
         data = await GKEService.getPods(clusterName, location, namespace);
-        console.log('Loaded pods for namespace:', data.length, data);
+        console.log('GKEPodsScreen: Loaded pods for namespace:', data.length, data);
+        console.log('GKEPodsScreen: First pod sample:', data[0]);
       }
       
       if (!data || !Array.isArray(data)) {
-        console.error('Invalid data received:', data);
+        console.error('GKEPodsScreen: Invalid data received:', data);
         data = [];
       }
       
+      console.log('GKEPodsScreen: Setting pods state with', data.length, 'pods');
       setPods(data);
     } catch (error) {
-      console.error('Failed to load pods:', error);
+      console.error('GKEPodsScreen: Failed to load pods:', error);
+      console.error('GKEPodsScreen: Error details:', error);
       Alert.alert('Error', `Failed to load pods: ${(error as Error).message}`);
     } finally {
       setIsLoading(false);

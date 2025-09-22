@@ -261,12 +261,17 @@ export class GKEService {
    */
   static async getPods(clusterName: string, clusterLocation: string, namespace: string): Promise<GKEPod[]> {
     try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${clusterLocation}`
-      );
+      console.log('GKEService: getPods called with:', { clusterName, clusterLocation, namespace });
+      const endpoint = `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${clusterLocation}`;
+      console.log('GKEService: Calling endpoint:', endpoint);
+      
+      const response = await AuthService.authenticatedRequest(endpoint);
+      console.log('GKEService: getPods response:', response);
+      console.log('GKEService: Response type:', typeof response, 'Is array:', Array.isArray(response));
+      
       return response;
     } catch (error) {
-      console.error('Failed to get pods:', error);
+      console.error('GKEService: Failed to get pods:', error);
       throw error;
     }
   }
