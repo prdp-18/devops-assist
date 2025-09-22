@@ -209,12 +209,26 @@ export default function GKEPodsScreen({
       console.log('GKEPodsScreen: Getting deployment name for pod:', selectedPod.name);
       
       // Get deployment name from pod's owner references or labels
-      const deploymentName = await GKEService.getDeploymentNameFromPod(
-        clusterName, 
-        location, 
-        selectedPod.namespace, 
-        selectedPod.name
-      );
+      let deploymentName: string | null = null;
+      
+      // Check if the new method exists (for backward compatibility)
+      if (typeof GKEService.getDeploymentNameFromPod === 'function') {
+        deploymentName = await GKEService.getDeploymentNameFromPod(
+          clusterName, 
+          location, 
+          selectedPod.namespace, 
+          selectedPod.name
+        );
+      } else {
+        console.log('GKEPodsScreen: getDeploymentNameFromPod method not available, using fallback');
+        // Fallback: try to extract from pod name (simple approach)
+        const podName = selectedPod.name;
+        const parts = podName.split('-');
+        if (parts.length >= 2) {
+          // Take first two parts as deployment name (e.g., "deployment-1" from "deployment-1-6967fc6cc6-9sf6c")
+          deploymentName = parts.slice(0, 2).join('-');
+        }
+      }
       
       if (!deploymentName) {
         Alert.alert('Error', 'Could not find deployment name for this pod');
