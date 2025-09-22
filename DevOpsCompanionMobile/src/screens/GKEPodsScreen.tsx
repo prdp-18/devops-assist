@@ -204,7 +204,7 @@ export default function GKEPodsScreen({
           </View>
         </View>
         <View style={styles.podActions}>
-          <StatusBadge status={pod.status} />
+          <StatusBadge status={pod.status?.phase || 'Unknown'} />
           <TouchableOpacity
             style={styles.optionsButton}
             onPress={() => handlePodOptions(pod)}

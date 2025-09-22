@@ -13,6 +13,14 @@ export default function StatusBadge({
   showIcon = false 
 }: StatusBadgeProps) {
   const getStatusConfig = (status: string) => {
+    if (!status || typeof status !== 'string') {
+      return {
+        color: '#8e8e93',
+        backgroundColor: '#f5f5f5',
+        text: 'Unknown',
+      };
+    }
+    
     const normalizedStatus = status.toLowerCase();
     
     if (normalizedStatus.includes('running') || normalizedStatus.includes('ready') || normalizedStatus.includes('active')) {

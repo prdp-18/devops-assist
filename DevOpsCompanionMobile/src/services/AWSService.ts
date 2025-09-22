@@ -35,13 +35,7 @@ export class AWSService {
     try {
       const url = region ? `/api/instances?region=${region}` : '/api/instances';
       const response = await AuthService.authenticatedRequest(url);
-      
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        throw new Error(`Failed to fetch instances: ${response.status} - ${errorText}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get AWS instances:', error);
       throw error;
@@ -129,12 +123,7 @@ export class AWSService {
     try {
       const url = region ? `/api/instances/${instanceName}/ssh-info?region=${region}` : `/api/instances/${instanceName}/ssh-info`;
       const response = await AuthService.authenticatedRequest(url);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get SSH info: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get SSH info:', error);
       throw error;
@@ -156,30 +145,8 @@ export class AWSService {
         url += `&region=${region}`;
       }
       
-      const response = await AuthService.authenticatedRequest(url, {
-        method: 'POST',
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text().catch(() => 'Unknown error');
-        let errorMessage = `Failed to execute command: ${response.status}`;
-        
-        try {
-          const errorData = JSON.parse(errorText);
-          if (errorData.detail) {
-            errorMessage = errorData.detail;
-          }
-        } catch {
-          // If not JSON, use the raw text
-          if (errorText && errorText.trim()) {
-            errorMessage = errorText;
-          }
-        }
-        
-        throw new Error(errorMessage);
-      }
-      
-      return await response.json();
+      const response = await AuthService.authenticatedRequest(url, 'POST');
+      return response;
     } catch (error) {
       console.error('Failed to execute system command:', error);
       throw error;
@@ -194,12 +161,7 @@ export class AWSService {
       const response = await AuthService.authenticatedRequest(
         `/api/instances/${instanceName}`
       );
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get instance details: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get instance details:', error);
       throw error;
@@ -214,12 +176,7 @@ export class AWSService {
       const response = await AuthService.authenticatedRequest(
         `/api/instances/${instanceName}/state`
       );
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get instance state: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get instance state:', error);
       throw error;
