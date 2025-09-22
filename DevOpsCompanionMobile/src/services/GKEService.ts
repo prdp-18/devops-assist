@@ -320,19 +320,25 @@ export class GKEService {
    */
   static async describePod(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<string> {
     try {
+      console.log('GKEService: Calling describe pod API for:', podName);
       const response = await AuthService.authenticatedRequest(
         `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${clusterLocation}`
       );
       
+      console.log('GKEService: Describe pod API response:', response);
+      
       // The API returns describe_output and pod_yaml fields
       let output = '';
       if (response.describe_output) {
+        console.log('GKEService: Found describe_output:', response.describe_output.length, 'characters');
         output += `=== Pod Description ===\n${response.describe_output}\n\n`;
       }
       if (response.pod_yaml) {
+        console.log('GKEService: Found pod_yaml:', response.pod_yaml.length, 'characters');
         output += `=== Pod YAML ===\n${response.pod_yaml}`;
       }
       
+      console.log('GKEService: Final output length:', output.length);
       return output || 'No pod details available';
     } catch (error) {
       console.error('Failed to describe pod:', error);

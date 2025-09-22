@@ -189,11 +189,15 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
+      console.log('GKEPodsScreen: Starting describe pod for:', selectedPod.name);
       const details = await GKEService.describePod(clusterName, location, selectedPod.namespace, selectedPod.name);
+      console.log('GKEPodsScreen: Received details:', details.length, 'characters');
+      console.log('GKEPodsScreen: Details preview:', details.substring(0, 100));
       setPodDetails({ type: 'describe', content: details });
       setPodDetailsModalVisible(true);
       setOptionsModalVisible(false);
     } catch (error) {
+      console.error('GKEPodsScreen: Describe pod error:', error);
       Alert.alert('Error', `Failed to describe pod: ${(error as Error).message}`);
     }
   };
