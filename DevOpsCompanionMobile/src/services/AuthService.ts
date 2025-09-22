@@ -146,8 +146,9 @@ export class AuthService {
    */
   static async authenticatedRequest(
     endpoint: string,
-    options: RequestInit = {}
-  ): Promise<Response> {
+    method: string = 'GET',
+    body?: any
+  ): Promise<any> {
     const token = await this.getStoredToken();
     
     if (!token) {
@@ -157,13 +158,26 @@ export class AuthService {
     const headers = {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
-      ...options.headers,
     };
 
-    return fetch(`${API_BASE_URL}${endpoint}`, {
-      ...options,
+    const options: RequestInit = {
+      method,
       headers,
-    });
+    };
+
+    if (body && method !== 'GET') {
+      options.body = JSON.stringify(body);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
+      throw new Error(`Failed to fetch ${endpoint.split('/').pop()}: ${response.status}`);
+    }
+
+    return response.json();
   }
 
   /**
