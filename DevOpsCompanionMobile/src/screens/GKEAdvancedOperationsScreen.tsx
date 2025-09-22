@@ -11,6 +11,7 @@ import {
   Modal,
   ScrollView,
   TextInput,
+  Keyboard,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -305,7 +306,10 @@ export default function GKEAdvancedOperationsScreen({
                 {isEditingYaml ? 'Edit' : 'View'} YAML
               </Text>
               <TouchableOpacity
-                onPress={() => setYamlModalVisible(false)}
+                onPress={() => {
+                  Keyboard.dismiss();
+                  setYamlModalVisible(false);
+                }}
                 style={styles.closeButton}
               >
                 <Ionicons name="close" size={24} color="#666" />
@@ -313,14 +317,26 @@ export default function GKEAdvancedOperationsScreen({
             </View>
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
-                <TextInput
-                  style={styles.yamlInput}
-                  value={yamlContent}
-                  onChangeText={setYamlContent}
-                  multiline
-                  textAlignVertical="top"
-                  fontFamily="monospace"
-                />
+                <View style={styles.textInputContainer}>
+                  <TextInput
+                    style={styles.yamlInput}
+                    value={yamlContent}
+                    onChangeText={setYamlContent}
+                    multiline
+                    textAlignVertical="top"
+                    fontFamily="monospace"
+                    onBlur={() => Keyboard.dismiss()}
+                    onSubmitEditing={() => Keyboard.dismiss()}
+                    returnKeyType="done"
+                    blurOnSubmit={true}
+                  />
+                  <TouchableOpacity
+                    style={styles.doneButton}
+                    onPress={() => Keyboard.dismiss()}
+                  >
+                    <Text style={styles.doneButtonText}>Done</Text>
+                  </TouchableOpacity>
+                </View>
               ) : (
                 <Text style={styles.yamlText}>
                   {yamlContent}
@@ -332,6 +348,7 @@ export default function GKEAdvancedOperationsScreen({
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => {
+                    Keyboard.dismiss();
                     setYamlModalVisible(false);
                     setIsEditingYaml(false);
                   }}
@@ -340,7 +357,10 @@ export default function GKEAdvancedOperationsScreen({
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.saveButton}
-                  onPress={handleSaveYaml}
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    handleSaveYaml();
+                  }}
                 >
                   <Ionicons name="save" size={16} color="#fff" />
                   <Text style={styles.saveButtonText}>Save Changes</Text>
@@ -494,6 +514,10 @@ const styles = StyleSheet.create({
     marginLeft: 12,
     fontWeight: '500',
   },
+  textInputContainer: {
+    flex: 1,
+    position: 'relative',
+  },
   yamlInput: {
     flex: 1,
     fontSize: 14,
@@ -505,6 +529,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#e2e8f0',
     textAlignVertical: 'top',
+    paddingBottom: 50, // Space for Done button
+  },
+  doneButton: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  doneButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   yamlText: {
     fontSize: 14,
