@@ -502,8 +502,9 @@ export class GKEService {
    */
   static async getResourceYaml(clusterName: string, clusterLocation: string, namespace: string, resourceType: string, resourceName: string): Promise<string> {
     try {
+      // Use the same endpoint format as the web app
       const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/${resourceType}/${resourceName}/yaml?cluster_location=${clusterLocation}`
+        `/api/gcp/clusters/${clusterName}/${resourceType}/${resourceName}/yaml?cluster_location=${clusterLocation}&namespace=${namespace}`
       );
       return response.yaml || '';
     } catch (error) {
@@ -517,8 +518,9 @@ export class GKEService {
    */
   static async updateResourceYaml(clusterName: string, clusterLocation: string, namespace: string, resourceType: string, resourceName: string, yaml: string): Promise<void> {
     try {
+      // Use the same endpoint format as the web app
       await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/${resourceType}/${resourceName}/yaml?cluster_location=${clusterLocation}`,
+        `/api/gcp/clusters/${clusterName}/${resourceType}/${resourceName}/edit?cluster_location=${clusterLocation}&namespace=${namespace}`,
         'PUT',
         { yaml }
       );
