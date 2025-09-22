@@ -347,6 +347,77 @@ export class GKEService {
   }
 
   /**
+   * Get deployment name from pod by checking owner references
+   */
+  static async getDeploymentNameFromPod(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<string | null> {
+    try {
+      console.log('GKEService: Getting deployment name for pod:', podName);
+      
+      // Get pod describe output to find owner references
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${clusterLocation}`
+      );
+      
+      console.log('GKEService: Pod describe response:', response);
+      
+      // Check if we have pod_yaml with owner references
+      if (response.pod_yaml) {
+        try {
+          const yaml = response.pod_yaml;
+          console.log('GKEService: Pod YAML length:', yaml.length);
+          
+          // Look for ownerReferences in the YAML
+          const ownerRefMatch = yaml.match(/ownerReferences:\s*\n\s*-\s*apiVersion:\s*apps\/v1\s*\n\s*kind:\s*ReplicaSet\s*\n\s*name:\s*([^\s\n]+)/);
+          if (ownerRefMatch) {
+            const replicaSetName = ownerRefMatch[1];
+            console.log('GKEService: Found ReplicaSet name:', replicaSetName);
+            
+            // Extract deployment name from ReplicaSet name
+            // ReplicaSet names are typically: deployment-name-hash
+            const deploymentName = replicaSetName.split('-').slice(0, -1).join('-');
+            console.log('GKEService: Extracted deployment name:', deploymentName);
+            return deploymentName;
+          }
+          
+          // Alternative: look for labels that might contain deployment name
+          const labelMatch = yaml.match(/app:\s*([^\s\n]+)/);
+          if (labelMatch) {
+            const appLabel = labelMatch[1];
+            console.log('GKEService: Found app label:', appLabel);
+            return appLabel;
+          }
+        } catch (yamlError) {
+          console.error('GKEService: Error parsing YAML:', yamlError);
+        }
+      }
+      
+      // Fallback: try to get deployment name from describe output
+      if (response.describe_output) {
+        const describeOutput = response.describe_output;
+        console.log('GKEService: Describe output length:', describeOutput.length);
+        
+        // Look for "Controlled By:" in describe output
+        const controlledByMatch = describeOutput.match(/Controlled By:\s*([^\s\n]+)/);
+        if (controlledByMatch) {
+          const replicaSetName = controlledByMatch[1];
+          console.log('GKEService: Found Controlled By:', replicaSetName);
+          
+          // Extract deployment name from ReplicaSet name
+          const deploymentName = replicaSetName.split('-').slice(0, -1).join('-');
+          console.log('GKEService: Extracted deployment name from describe:', deploymentName);
+          return deploymentName;
+        }
+      }
+      
+      console.log('GKEService: Could not find deployment name');
+      return null;
+    } catch (error) {
+      console.error('Failed to get deployment name from pod:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Scale a deployment
    */
   static async scaleDeployment(clusterName: string, clusterLocation: string, namespace: string, deploymentName: string, replicas: number): Promise<void> {

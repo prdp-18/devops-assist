@@ -205,40 +205,54 @@ export default function GKEPodsScreen({
   const handleScaleDeployment = async () => {
     if (!selectedPod) return;
     
-    // Extract deployment name from pod name
-    // Pod names are typically: deployment-name-hash-pod-id
-    // We need to extract: deployment-name
-    const podName = selectedPod.name;
-    const deploymentName = podName.split('-').slice(0, -3).join('-'); // Remove last 3 parts (hash and pod-id)
-    
-    console.log('GKEPodsScreen: Scaling deployment:', deploymentName, 'for pod:', podName);
-    
-    Alert.prompt(
-      'Scale Deployment',
-      `Enter new replica count for deployment "${deploymentName}":`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Scale',
-          onPress: async (replicaCount) => {
-            if (replicaCount && !isNaN(parseInt(replicaCount))) {
-              try {
-                await GKEService.scaleDeployment(clusterName, location, selectedPod.namespace, deploymentName, parseInt(replicaCount));
-                Alert.alert('Success', `Deployment ${deploymentName} scaled to ${replicaCount} replicas`);
-                setOptionsModalVisible(false);
-                loadPods(); // Refresh the list
-              } catch (error) {
-                Alert.alert('Error', `Failed to scale deployment: ${(error as Error).message}`);
+    try {
+      console.log('GKEPodsScreen: Getting deployment name for pod:', selectedPod.name);
+      
+      // Get deployment name from pod's owner references or labels
+      const deploymentName = await GKEService.getDeploymentNameFromPod(
+        clusterName, 
+        location, 
+        selectedPod.namespace, 
+        selectedPod.name
+      );
+      
+      if (!deploymentName) {
+        Alert.alert('Error', 'Could not find deployment name for this pod');
+        return;
+      }
+      
+      console.log('GKEPodsScreen: Found deployment name:', deploymentName);
+      
+      Alert.prompt(
+        'Scale Deployment',
+        `Enter new replica count for deployment "${deploymentName}":`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { 
+            text: 'Scale',
+            onPress: async (replicaCount) => {
+              if (replicaCount && !isNaN(parseInt(replicaCount))) {
+                try {
+                  await GKEService.scaleDeployment(clusterName, location, selectedPod.namespace, deploymentName, parseInt(replicaCount));
+                  Alert.alert('Success', `Deployment ${deploymentName} scaled to ${replicaCount} replicas`);
+                  setOptionsModalVisible(false);
+                  loadPods(); // Refresh the list
+                } catch (error) {
+                  Alert.alert('Error', `Failed to scale deployment: ${(error as Error).message}`);
+                }
+              } else {
+                Alert.alert('Error', 'Please enter a valid number');
               }
-            } else {
-              Alert.alert('Error', 'Please enter a valid number');
             }
           }
-        }
-      ],
-      'plain-text',
-      '1'
-    );
+        ],
+        'plain-text',
+        '1'
+      );
+    } catch (error) {
+      console.error('GKEPodsScreen: Error getting deployment name:', error);
+      Alert.alert('Error', `Failed to get deployment name: ${(error as Error).message}`);
+    }
   };
 
   const PodCard = ({ pod }: { pod: GKEPod }) => (
