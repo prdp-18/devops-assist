@@ -375,7 +375,7 @@ export class GKEService {
             // Extract deployment name from ReplicaSet name
             // ReplicaSet names are typically: deployment-name-hash
             const deploymentName = replicaSetName.split('-').slice(0, -1).join('-');
-            console.log('GKEService: Extracted deployment name:', deploymentName);
+            console.log('GKEService: Extracted deployment name from YAML:', deploymentName);
             return deploymentName;
           }
           
@@ -402,8 +402,12 @@ export class GKEService {
           const replicaSetName = controlledByMatch[1];
           console.log('GKEService: Found Controlled By:', replicaSetName);
           
+          // Remove "ReplicaSet/" prefix if present
+          const cleanReplicaSetName = replicaSetName.replace(/^ReplicaSet\//, '');
+          console.log('GKEService: Clean ReplicaSet name:', cleanReplicaSetName);
+          
           // Extract deployment name from ReplicaSet name
-          const deploymentName = replicaSetName.split('-').slice(0, -1).join('-');
+          const deploymentName = cleanReplicaSetName.split('-').slice(0, -1).join('-');
           console.log('GKEService: Extracted deployment name from describe:', deploymentName);
           return deploymentName;
         }
