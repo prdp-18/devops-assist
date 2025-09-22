@@ -401,6 +401,21 @@ export class GKEService {
   }
 
   /**
+   * Get all pods across all namespaces
+   */
+  static async getAllPods(clusterName: string, clusterLocation: string): Promise<GKEPod[]> {
+    try {
+      const response = await AuthService.authenticatedRequest(
+        `/api/gcp/clusters/${clusterName}/pods/all?cluster_location=${clusterLocation}`
+      );
+      return response;
+    } catch (error) {
+      console.error('Failed to get all pods:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Restart a pod
    */
   static async restartPod(clusterName: string, clusterLocation: string, namespace: string, podName: string): Promise<void> {

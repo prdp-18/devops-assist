@@ -60,8 +60,18 @@ export default function GKEPodsScreen({
     try {
       setIsLoading(true);
       console.log('Loading pods for cluster:', clusterName, 'namespace:', namespace);
-      const data = await GKEService.getPods(clusterName, location, namespace);
-      console.log('Loaded pods:', data.length, data);
+      
+      let data: GKEPod[];
+      if (namespace === 'all') {
+        // Load all pods across all namespaces
+        data = await GKEService.getAllPods(clusterName, location);
+        console.log('Loaded all pods:', data.length, data);
+      } else {
+        // Load pods for specific namespace
+        data = await GKEService.getPods(clusterName, location, namespace);
+        console.log('Loaded pods for namespace:', data.length, data);
+      }
+      
       setPods(data);
     } catch (error) {
       console.error('Failed to load pods:', error);
@@ -213,7 +223,9 @@ export default function GKEPodsScreen({
           <Ionicons name="arrow-back" size={24} color="#2563eb" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Pods in {namespace}</Text>
+          <Text style={styles.headerTitle}>
+            {namespace === 'all' ? 'All Pods' : `Pods in ${namespace}`}
+          </Text>
           <Text style={styles.headerSubtitle}>{pods.length} pod{pods.length !== 1 ? 's' : ''}</Text>
         </View>
         <TouchableOpacity onPress={onRefresh} style={styles.refreshButton}>
