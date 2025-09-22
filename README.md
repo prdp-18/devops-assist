@@ -1,8 +1,23 @@
 # DevOps Companion App
 
-A comprehensive web-based DevOps management platform for managing AWS Lightsail instances and Google Kubernetes Engine (GKE) clusters directly from your browser.
+A comprehensive multi-platform DevOps management platform for managing AWS Lightsail instances and Google Kubernetes Engine (GKE) clusters. Available as both a Progressive Web App (PWA) and native mobile application.
+
+## 📱 Platform Support
+
+- **🌐 Progressive Web App (PWA)**: Cross-platform web application with offline capabilities
+- **📱 React Native Mobile App**: Native iOS and Android application with Expo framework
+- **🖥️ Desktop**: Full desktop support via web browser or mobile app
 
 ## 🚀 Features
+
+### 📱 Mobile Application (React Native + Expo)
+- **Native Performance**: Optimized for iOS and Android with native components
+- **Biometric Authentication**: Touch ID and Face ID support for secure access
+- **Offline Caching**: Intelligent caching system for AWS instances and GKE resources
+- **Real-time Updates**: Live status updates with pull-to-refresh functionality
+- **Touch-Optimized UI**: Mobile-first design with gesture support
+- **Cross-Platform**: Single codebase for iOS and Android
+- **Expo Integration**: Easy development and deployment with Expo Go
 
 ### 📱 Progressive Web App (PWA)
 - **Mobile-First Design**: Optimized for mobile devices with touch-friendly interface
@@ -18,32 +33,49 @@ A comprehensive web-based DevOps management platform for managing AWS Lightsail 
 - **Role-based Access**: Configurable user permissions and access controls
 
 ### ☁️ AWS Lightsail Management
-- **Instance Monitoring**: View all Lightsail instances with real-time status
-- **Instance Control**: Reboot instances with confirmation dialogs
+- **Instance Monitoring**: View all Lightsail instances with real-time status across multiple regions
+- **Instance Control**: Reboot instances with confirmation dialogs and loading states
 - **SSH Management**: Get SSH connection details including IP, username, and key information
-- **System Commands**: Execute system commands on instances via SSH
+- **System Commands**: Execute comprehensive system commands on instances via SSH
+  - Memory usage (`free -h`)
+  - Disk usage (`df -h`)
+  - System status (`systemctl status`)
+  - Service restart (`systemctl restart`)
+  - Cache clearing (`sync && echo 3 > /proc/sys/vm/drop_caches`)
+- **Multi-Region Support**: Automatic discovery across all AWS regions
+- **Caching System**: Intelligent caching to reduce API calls and improve performance
+- **Error Handling**: Detailed error messages with actionable feedback
 
 ### 🐳 Google Kubernetes Engine (GKE) Management
-- **Cluster Management**: List and manage GKE clusters across regions/zones
-- **Namespace Operations**: Browse and manage Kubernetes namespaces
+- **Hierarchical Navigation**: Complete cluster → namespace → pod → advanced operations flow
+- **Cluster Management**: 
+  - List and manage GKE clusters across regions/zones
+  - Cluster health monitoring and status display
+  - Node resource usage and capacity planning
+- **Namespace Operations**: 
+  - Browse and manage Kubernetes namespaces
+  - Cross-namespace pod viewing with "-A" flag support
 - **Pod Management**: 
   - View pods with detailed status, resource usage, and container information
+  - Pod ready state display (e.g., "1/1", "3/3")
+  - Age calculation and restart count tracking
   - Restart pods with automatic recreation
   - Delete pods with confirmation
   - View pod logs with configurable line count
   - Describe pods with detailed YAML output
-  - Scale deployments to specific replica counts
+  - Scale deployments with intelligent deployment name extraction
 - **Node Management**:
   - View cluster nodes with status and resource information
   - Monitor node resource usage (CPU, memory)
   - Wide format node listing with additional details
 - **Advanced Kubernetes Operations**:
-  - Deployment management (list, scale, rollout restart, edit)
-  - Service management (list, view YAML)
-  - Ingress management (list, view YAML)
-  - Secret management (list, view YAML)
-  - Service account management (list, view YAML)
-  - Cross-namespace pod viewing
+  - **Deployment Management**: List, scale, rollout restart, edit with live YAML editor
+  - **Service Management**: List, view YAML, download YAML files
+  - **Ingress Management**: List, view YAML, download YAML files
+  - **Secret Management**: List, view YAML, download YAML files
+  - **Service Account Management**: List, view YAML, download YAML files
+  - **Real-time YAML Editing**: Live editing and deployment of Kubernetes resources
+  - **File Download**: Native file download for YAML resources
 
 ### 📊 Monitoring & Observability
 - **Real-time Metrics**: CPU and memory utilization for GCP resources
@@ -72,6 +104,7 @@ A comprehensive web-based DevOps management platform for managing AWS Lightsail 
 
 ## 🏗️ Architecture
 
+### Multi-Platform Architecture
 ```
 ┌─────────────────┐    HTTPS/JSON    ┌─────────────────┐    Cloud SDKs  ┌─────────────────┐
 │   Web App       │ ──────────────► │   Backend API   │ ────────────► │   Cloud Services │
@@ -79,7 +112,79 @@ A comprehensive web-based DevOps management platform for managing AWS Lightsail 
 │                 │                  │                 │              │ GCP: GKE +       │
 │                 │                  │                 │              │     Monitoring   │
 └─────────────────┘                  └─────────────────┘              └─────────────────┘
+┌─────────────────┐    HTTPS/JSON    ┌─────────────────┐
+│   Mobile App    │ ──────────────► │   Backend API   │
+│ (React Native)  │                  │   (FastAPI)     │
+│                 │                  │                 │
+└─────────────────┘                  └─────────────────┘
 ```
+
+### Mobile App Architecture (React Native + Expo)
+```
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   UI Layer      │    │  Service Layer  │    │   Storage Layer │
+│                 │    │                 │    │                 │
+│ • Screens       │◄──►│ • AuthService   │◄──►│ • AsyncStorage  │
+│ • Components    │    │ • AWSService    │    │ • InstanceCache │
+│ • Navigation    │    │ • GKEService    │    │ • BiometricAuth │
+│ • Modals        │    │ • BiometricSvc  │    │                 │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+## 📊 Development Status
+
+### ✅ Completed Features
+
+#### Web Application (PWA)
+- ✅ **Complete AWS Lightsail Management**: Instance monitoring, SSH access, system commands
+- ✅ **Complete GKE Management**: Hierarchical navigation, pod management, advanced operations
+- ✅ **Real-time YAML Editing**: Live editing and deployment of Kubernetes resources
+- ✅ **File Download System**: Native YAML file downloads
+- ✅ **Authentication System**: JWT-based authentication with session management
+- ✅ **Responsive Design**: Mobile-first design with touch-friendly interface
+
+#### Mobile Application (React Native + Expo)
+- ✅ **Core Infrastructure**: React Native + Expo framework setup
+- ✅ **Authentication System**: JWT authentication with biometric support
+- ✅ **AWS Lightsail Integration**: Complete instance management with caching
+- ✅ **GKE Hierarchical Navigation**: Cluster → Namespace → Pod → Advanced Operations
+- ✅ **Real-time Operations**: Pod restart, scaling, YAML editing
+- ✅ **File Download**: Native file sharing for YAML resources
+- ✅ **Mobile UI/UX**: Touch-optimized interface with proper modal handling
+- ✅ **Keyboard Management**: iPhone-specific keyboard handling with caps lock toggle
+- ✅ **Error Handling**: Comprehensive error messages and loading states
+
+### 🔄 Recent Improvements (Latest Updates)
+
+#### Mobile App Enhancements
+- ✅ **Fixed Modal Positioning**: Centered modals with proper sizing
+- ✅ **Enhanced Keyboard UX**: Caps lock toggle for iPhone users
+- ✅ **Improved File Downloads**: Native file sharing with proper YAML downloads
+- ✅ **Better Error Handling**: Detailed error messages with actionable feedback
+- ✅ **Performance Optimizations**: Intelligent caching and reduced API calls
+- ✅ **UI Polish**: Loading animations, proper button states, and visual feedback
+
+#### GKE Functionality Overhaul
+- ✅ **Complete Redesign**: Hierarchical navigation matching web app
+- ✅ **Advanced Operations**: All Kubernetes resource types with proper actions
+- ✅ **YAML Editor**: Live editing with keyboard dismissal and file operations
+- ✅ **Pod Management**: Ready state display, age calculation, restart tracking
+- ✅ **Deployment Scaling**: Intelligent deployment name extraction from pod metadata
+
+### 🚧 Upcoming Features & Fixes
+
+#### Mobile App Roadmap
+- 🔄 **Push Notifications**: Critical DevOps alerts and status updates
+- 🔄 **Offline Mode**: Enhanced offline capabilities with data synchronization
+- 🔄 **Advanced Caching**: More intelligent caching strategies
+- 🔄 **Performance Monitoring**: Real-time performance metrics and alerts
+- 🔄 **Multi-Account Support**: Support for multiple AWS/GCP accounts
+
+#### Web App Enhancements
+- 🔄 **Enhanced Monitoring**: Advanced metrics and alerting system
+- 🔄 **Team Collaboration**: Multi-user support with role-based access
+- 🔄 **API Rate Limiting**: Improved rate limiting and request optimization
+- 🔄 **Advanced Security**: Enhanced security features and audit logging
 
 ## 🚀 Quick Start
 
@@ -90,7 +195,37 @@ git clone https://github.com/prdp-18/devops-assist.git
 cd devops-assist
 ```
 
-### 2. PWA Installation (Recommended)
+### 2. Mobile App Setup (React Native + Expo)
+
+**Prerequisites:**
+- Node.js 18+ and npm
+- Expo CLI: `npm install -g @expo/cli`
+- Expo Go app on your mobile device (iOS/Android)
+
+**Development Setup:**
+```bash
+# Navigate to mobile app directory
+cd DevOpsCompanionMobile
+
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Start development server
+npx expo start --tunnel
+
+# Scan QR code with Expo Go app
+```
+
+**Production Build:**
+```bash
+# Build for iOS
+npx expo build:ios
+
+# Build for Android
+npx expo build:android
+```
+
+### 3. PWA Installation (Recommended)
 
 **For Mobile/Desktop:**
 1. Open the web app in Chrome/Edge: `http://127.0.0.1:3000`
@@ -171,7 +306,25 @@ The web app automatically configures itself based on the environment:
 - **Development**: Uses local backend (`http://127.0.0.1:8000`)
 - **Production**: Uses deployed backend URL
 
-## 🔧 Configuration
+## 🔧 Technical Specifications
+
+### Mobile App Stack
+- **Framework**: React Native 0.81.4
+- **Development Platform**: Expo SDK 54
+- **Navigation**: React Navigation 6.x
+- **State Management**: React Hooks (useState, useEffect)
+- **Authentication**: JWT with AsyncStorage
+- **Biometric Auth**: Expo LocalAuthentication
+- **File Operations**: Expo FileSystem + Expo Sharing
+- **Clipboard**: Expo Clipboard
+- **Platform Support**: iOS 13+, Android 8+
+
+### Web App Stack
+- **Frontend**: Vanilla HTML5, CSS3, JavaScript ES6+
+- **Backend**: Python 3.9+ with FastAPI
+- **Authentication**: JWT with session storage
+- **Cloud SDKs**: AWS SDK (boto3), Google Cloud SDK
+- **Deployment**: Uvicorn ASGI server
 
 ### Backend Environment Variables
 
@@ -299,6 +452,37 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
 
 ## 🚨 Troubleshooting
 
+### Mobile App Issues
+
+1. **Expo Build Errors**
+   ```bash
+   # Clear cache and reinstall
+   npx expo install --fix
+   npm install --legacy-peer-deps
+   ```
+
+2. **iOS Simulator Issues**
+   ```bash
+   # Reset iOS Simulator
+   npx expo run:ios --clear
+   ```
+
+3. **Android Build Issues**
+   ```bash
+   # Clear Android cache
+   npx expo run:android --clear
+   ```
+
+4. **Network Connection Issues**
+   - Ensure backend is running on `0.0.0.0:8000` (not `127.0.0.1`)
+   - Check Tailscale network connectivity
+   - Verify API endpoints in `AuthService.ts`
+
+5. **Keyboard Issues on iPhone**
+   - Use caps lock toggle button in YAML editor
+   - Tap "Done" button to dismiss keyboard
+   - Ensure proper keyboard dismissal handlers
+
 ### Common Issues
 
 1. **AWS Credentials Not Found**
@@ -318,12 +502,12 @@ curl -H "Authorization: Bearer YOUR_TOKEN" \
    - Verify backend is accessible from browser
    - Check CORS configuration
 
-5. **SSH Connection Issues**
+4. **SSH Connection Issues**
    - Verify SSH keys are available in `~/.ssh/`
    - Check instance has public IP address
    - Ensure SSH key permissions are correct (600)
 
-6. **GCP Cluster Access Issues**
+5. **GCP Cluster Access Issues**
    - Verify `gcloud` CLI is installed and configured
    - Check cluster credentials: `gcloud container clusters get-credentials CLUSTER_NAME`
    - Ensure kubectl is installed and working
