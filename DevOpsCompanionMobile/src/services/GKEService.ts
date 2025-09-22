@@ -73,11 +73,7 @@ export class GKEService {
         
       const response = await AuthService.authenticatedRequest(endpoint);
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch clusters: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get GKE clusters:', error);
       throw error;
@@ -123,11 +119,7 @@ export class GKEService {
         `/api/gcp/clusters/${clusterName}/namespaces?cluster_location=${clusterLocation}`
       );
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch namespaces: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get namespaces:', error);
       throw error;
@@ -143,40 +135,13 @@ export class GKEService {
         `/api/gcp/clusters/${clusterName}/nodes?cluster_location=${clusterLocation}`
       );
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch nodes: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get nodes:', error);
       throw error;
     }
   }
 
-  /**
-   * Get pods in a specific namespace
-   */
-  static async getPods(
-    clusterName: string,
-    namespace: string,
-    clusterLocation: string
-  ): Promise<GKEPod[]> {
-    try {
-      const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods?cluster_location=${clusterLocation}`
-      );
-      
-      if (!response.ok) {
-        throw new Error(`Failed to fetch pods: ${response.status}`);
-      }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('Failed to get pods:', error);
-      throw error;
-    }
-  }
 
   /**
    * Get all pods across all namespaces
@@ -187,11 +152,7 @@ export class GKEService {
         `/api/gcp/clusters/${clusterName}/pods/all?cluster_location=${clusterLocation}`
       );
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch all pods: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get all pods:', error);
       throw error;
@@ -213,7 +174,7 @@ export class GKEService {
         { method: 'POST' }
       );
       
-      return response.ok;
+      return response;
     } catch (error) {
       console.error('Failed to restart pod:', error);
       throw error;
@@ -235,7 +196,7 @@ export class GKEService {
         { method: 'DELETE' }
       );
       
-      return response.ok;
+      return response;
     } catch (error) {
       console.error('Failed to delete pod:', error);
       throw error;
@@ -257,11 +218,7 @@ export class GKEService {
         `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/logs?cluster_location=${clusterLocation}&lines=${lines}`
       );
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch pod logs: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get pod logs:', error);
       throw error;
@@ -282,11 +239,7 @@ export class GKEService {
         `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/pods/${podName}/describe?cluster_location=${clusterLocation}`
       );
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch pod description: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get pod description:', error);
       throw error;
@@ -308,11 +261,7 @@ export class GKEService {
         
       const response = await AuthService.authenticatedRequest(endpoint);
       
-      if (!response.ok) {
-        throw new Error(`Failed to fetch deployments: ${response.status}`);
-      }
-      
-      return await response.json();
+      return response;
     } catch (error) {
       console.error('Failed to get deployments:', error);
       throw error;
@@ -338,7 +287,7 @@ export class GKEService {
         }
       );
       
-      return response.ok;
+      return response;
     } catch (error) {
       console.error('Failed to scale deployment:', error);
       throw error;

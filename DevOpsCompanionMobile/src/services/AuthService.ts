@@ -171,13 +171,22 @@ export class AuthService {
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, options);
     
+    console.log('AuthService: Raw response received:', {
+      status: response.status,
+      ok: response.ok,
+      url: response.url,
+      headers: Object.fromEntries(response.headers.entries())
+    });
+    
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
       throw new Error(`Failed to fetch ${endpoint.split('/').pop()}: ${response.status}`);
     }
 
-    return response.json();
+    const jsonData = await response.json();
+    console.log('AuthService: Parsed JSON data:', jsonData);
+    return jsonData;
   }
 
   /**
