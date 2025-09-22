@@ -59,7 +59,6 @@ export default function GKEAdvancedOperationsScreen({
   const [yamlModalVisible, setYamlModalVisible] = useState(false);
   const [yamlContent, setYamlContent] = useState('');
   const [isEditingYaml, setIsEditingYaml] = useState(false);
-  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
   const textInputRef = useRef<TextInput>(null);
 
   useEffect(() => {
@@ -364,80 +363,43 @@ export default function GKEAdvancedOperationsScreen({
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
                 <View style={styles.textInputContainer}>
-                  {isCapsLockOn ? (
-                    // ENTER mode TextInput
-                    <TextInput
-                      ref={textInputRef}
-                      key="yaml-input-enter"
-                      style={styles.yamlInput}
-                      value={yamlContent}
-                      onChangeText={setYamlContent}
-                      multiline
-                      textAlignVertical="top"
-                      fontFamily="monospace"
-                      onBlur={() => Keyboard.dismiss()}
-                      onSubmitEditing={() => {
-                        // In ENTER mode, add newline
-                        setYamlContent(prev => prev + '\n');
-                      }}
-                      returnKeyType="default"
-                      blurOnSubmit={false}
-                      keyboardType="default"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      enablesReturnKeyAutomatically={false}
-                    />
-                  ) : (
-                    // DONE mode TextInput
-                    <TextInput
-                      ref={textInputRef}
-                      key="yaml-input-done"
-                      style={styles.yamlInput}
-                      value={yamlContent}
-                      onChangeText={setYamlContent}
-                      multiline
-                      textAlignVertical="top"
-                      fontFamily="monospace"
-                      onBlur={() => Keyboard.dismiss()}
-                      onSubmitEditing={() => {
-                        // In DONE mode, dismiss keyboard
-                        Keyboard.dismiss();
-                      }}
-                      returnKeyType="done"
-                      blurOnSubmit={true}
-                      keyboardType="default"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      enablesReturnKeyAutomatically={false}
-                    />
-                  )}
+                  <TextInput
+                    ref={textInputRef}
+                    style={styles.yamlInput}
+                    value={yamlContent}
+                    onChangeText={setYamlContent}
+                    multiline
+                    textAlignVertical="top"
+                    fontFamily="monospace"
+                    onBlur={() => Keyboard.dismiss()}
+                    onSubmitEditing={() => {
+                      // Default behavior - add newline
+                      setYamlContent(prev => prev + '\n');
+                    }}
+                    returnKeyType="default"
+                    blurOnSubmit={false}
+                    keyboardType="default"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    enablesReturnKeyAutomatically={false}
+                  />
                   <View style={styles.keyboardControls}>
                     <TouchableOpacity
-                      style={[styles.toggleButton, isCapsLockOn && styles.toggleButtonActive]}
+                      style={styles.enterButton}
                       onPress={() => {
-                        setIsCapsLockOn(!isCapsLockOn);
-                        // Dismiss and re-focus to force keyboard update
-                        Keyboard.dismiss();
-                        setTimeout(() => {
-                          textInputRef.current?.focus();
-                        }, 200);
+                        // Add newline to YAML content
+                        setYamlContent(prev => prev + '\n');
                       }}
                     >
-                      <Ionicons 
-                        name={isCapsLockOn ? "return-up" : "checkmark"} 
-                        size={14} 
-                        color="#fff"
-                      />
-                      <Text style={styles.toggleButtonText}>
-                        {isCapsLockOn ? 'ENTER' : 'DONE'}
-                      </Text>
+                      <Ionicons name="return-up" size={16} color="#fff" />
+                      <Text style={styles.enterButtonText}>ENTER</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.doneButton}
                       onPress={() => Keyboard.dismiss()}
                     >
-                      <Ionicons name="keypad" size={16} color="#fff" />
-                      <Text style={styles.doneButtonText}>Hide Keyboard</Text>
+                      <Ionicons name="checkmark" size={16} color="#fff" />
+                      <Text style={styles.doneButtonText}>DONE</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -653,52 +615,52 @@ const styles = StyleSheet.create({
     paddingBottom: 50, // Space for Done button
   },
   doneButton: {
-    position: 'absolute',
-    bottom: 10,
-    right: 10,
-    backgroundColor: '#2563eb',
+    backgroundColor: '#dc2626',
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 6,
-    elevation: 2,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 80,
   },
   doneButtonText: {
     color: '#fff',
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '700',
   },
   keyboardControls: {
     position: 'absolute',
-    bottom: 10,
-    right: 10,
+    bottom: 20,
+    right: 20,
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,
+    zIndex: 1000,
   },
-  toggleButton: {
-    backgroundColor: '#6b7280',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 6,
-    elevation: 2,
+  enterButton: {
+    backgroundColor: '#059669',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderRadius: 8,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 6,
+    minWidth: 80,
   },
-  toggleButtonActive: {
-    backgroundColor: '#2563eb',
-  },
-  toggleButtonText: {
+  enterButtonText: {
     color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 14,
+    fontWeight: '700',
   },
   yamlText: {
     fontSize: 14,
