@@ -364,6 +364,7 @@ export default function GKEAdvancedOperationsScreen({
               {isEditingYaml ? (
                 <View style={styles.textInputContainer}>
                   <TextInput
+                    key={`yaml-input-${isCapsLockOn ? 'enter' : 'done'}`}
                     style={styles.yamlInput}
                     value={yamlContent}
                     onChangeText={setYamlContent}
@@ -371,29 +372,42 @@ export default function GKEAdvancedOperationsScreen({
                     textAlignVertical="top"
                     fontFamily="monospace"
                     onBlur={() => Keyboard.dismiss()}
-                    onSubmitEditing={() => Keyboard.dismiss()}
+                    onSubmitEditing={() => {
+                      if (isCapsLockOn) {
+                        // In caps mode, add newline instead of dismissing
+                        setYamlContent(prev => prev + '\n');
+                      } else {
+                        // In done mode, dismiss keyboard
+                        Keyboard.dismiss();
+                      }
+                    }}
                     returnKeyType={isCapsLockOn ? "default" : "done"}
-                    blurOnSubmit={true}
+                    blurOnSubmit={!isCapsLockOn}
                     keyboardType="default"
                     autoCapitalize="none"
                     autoCorrect={false}
+                    enablesReturnKeyAutomatically={false}
                   />
                   <View style={styles.keyboardControls}>
                     <TouchableOpacity
-                      style={styles.toggleButton}
+                      style={[styles.toggleButton, isCapsLockOn && styles.toggleButtonActive]}
                       onPress={() => setIsCapsLockOn(!isCapsLockOn)}
                     >
+                      <Ionicons 
+                        name={isCapsLockOn ? "return-up" : "checkmark"} 
+                        size={14} 
+                        color={isCapsLockOn ? "#fff" : "#fff"} 
+                      />
                       <Text style={styles.toggleButtonText}>
-                        {isCapsLockOn ? 'CAPS' : 'done'}
+                        {isCapsLockOn ? 'ENTER' : 'DONE'}
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.doneButton}
                       onPress={() => Keyboard.dismiss()}
                     >
-                      <Text style={styles.doneButtonText}>
-                        {isCapsLockOn ? 'Enter' : 'Done'}
-                      </Text>
+                      <Ionicons name="keypad" size={16} color="#fff" />
+                      <Text style={styles.doneButtonText}>Hide Keyboard</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -644,6 +658,12 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  toggleButtonActive: {
+    backgroundColor: '#2563eb',
   },
   toggleButtonText: {
     color: '#fff',
