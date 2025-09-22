@@ -201,8 +201,9 @@ export class GKEService {
     namespace?: string
   ): Promise<GKEDeployment[]> {
     try {
+      // Use the same endpoint format as the web app
       const endpoint = namespace 
-        ? `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments?cluster_location=${clusterLocation}`
+        ? `/api/gcp/clusters/${clusterName}/deployments?cluster_location=${clusterLocation}&namespace=${namespace}`
         : `/api/gcp/clusters/${clusterName}/deployments?cluster_location=${clusterLocation}`;
         
       const response = await AuthService.authenticatedRequest(endpoint);
@@ -361,7 +362,7 @@ export class GKEService {
       console.log('GKEService: Pod describe response:', response);
       
       // Check if we have pod_yaml with owner references
-      if (response.pod_yaml) {
+      if (response.pod_yaml && typeof response.pod_yaml === 'string') {
         try {
           const yaml = response.pod_yaml;
           console.log('GKEService: Pod YAML length:', yaml.length);
@@ -392,7 +393,7 @@ export class GKEService {
       }
       
       // Fallback: try to get deployment name from describe output
-      if (response.describe_output) {
+      if (response.describe_output && typeof response.describe_output === 'string') {
         const describeOutput = response.describe_output;
         console.log('GKEService: Describe output length:', describeOutput.length);
         
