@@ -13,6 +13,7 @@ import {
   TextInput,
   Keyboard,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
@@ -112,6 +113,7 @@ export default function GKEAdvancedOperationsScreen({
     try {
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
+      setIsEditingYaml(false); // Set to view mode for download
       setYamlModalVisible(true);
       setActionsModalVisible(false);
     } catch (error) {
@@ -343,7 +345,7 @@ export default function GKEAdvancedOperationsScreen({
                 </Text>
               )}
             </ScrollView>
-            {isEditingYaml && (
+            {isEditingYaml ? (
               <View style={styles.yamlActions}>
                 <TouchableOpacity
                   style={styles.cancelButton}
@@ -364,6 +366,23 @@ export default function GKEAdvancedOperationsScreen({
                 >
                   <Ionicons name="save" size={16} color="#fff" />
                   <Text style={styles.saveButtonText}>Save Changes</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.yamlActions}>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={async () => {
+                    try {
+                      await Clipboard.setStringAsync(yamlContent);
+                      Alert.alert('Success', 'YAML copied to clipboard!');
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to copy to clipboard');
+                    }
+                  }}
+                >
+                  <Ionicons name="copy" size={16} color="#fff" />
+                  <Text style={styles.copyButtonText}>Copy to Clipboard</Text>
                 </TouchableOpacity>
               </View>
             )}
@@ -589,6 +608,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   saveButtonText: {
+    fontSize: 16,
+    color: '#fff',
+    fontWeight: '500',
+    marginLeft: 8,
+  },
+  copyButton: {
+    flex: 1,
+    flexDirection: 'row',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    backgroundColor: '#059669',
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copyButtonText: {
     fontSize: 16,
     color: '#fff',
     fontWeight: '500',
