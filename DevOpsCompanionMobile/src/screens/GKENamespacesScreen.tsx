@@ -18,6 +18,7 @@ import EmptyState from '../components/EmptyState';
 
 interface GKENamespace {
   name: string;
+  id: string;
   status?: string;
   creationTimestamp?: string;
 }
@@ -50,8 +51,11 @@ export default function GKENamespacesScreen({
       const data = await GKEService.getNamespaces(clusterName, location);
       console.log('Loaded namespaces:', data.length, data);
       
-      // Convert string array to namespace objects
-      const namespaceObjects = data.map(name => ({ name }));
+      // Convert string array to namespace objects with unique keys
+      const namespaceObjects = data.map((name, index) => ({ 
+        name, 
+        id: `${name}-${index}` // Create unique ID to prevent key conflicts
+      }));
       setNamespaces(namespaceObjects);
     } catch (error) {
       console.error('Failed to load namespaces:', error);
@@ -116,7 +120,7 @@ export default function GKENamespacesScreen({
 
       <FlatList
         data={namespaces}
-        keyExtractor={(item) => item.name}
+        keyExtractor={(item) => item.id}
         renderItem={({ item }) => <NamespaceCard namespace={item} />}
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
