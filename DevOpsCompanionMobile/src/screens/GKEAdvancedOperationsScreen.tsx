@@ -14,7 +14,7 @@ import {
   Keyboard,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -59,6 +59,7 @@ export default function GKEAdvancedOperationsScreen({
   const [yamlModalVisible, setYamlModalVisible] = useState(false);
   const [yamlContent, setYamlContent] = useState('');
   const [isEditingYaml, setIsEditingYaml] = useState(false);
+  const [isCapsLockOn, setIsCapsLockOn] = useState(false);
 
   useEffect(() => {
     loadResources();
@@ -371,15 +372,30 @@ export default function GKEAdvancedOperationsScreen({
                     fontFamily="monospace"
                     onBlur={() => Keyboard.dismiss()}
                     onSubmitEditing={() => Keyboard.dismiss()}
-                    returnKeyType="done"
+                    returnKeyType={isCapsLockOn ? "default" : "done"}
                     blurOnSubmit={true}
+                    keyboardType="default"
+                    autoCapitalize="none"
+                    autoCorrect={false}
                   />
-                  <TouchableOpacity
-                    style={styles.doneButton}
-                    onPress={() => Keyboard.dismiss()}
-                  >
-                    <Text style={styles.doneButtonText}>Done</Text>
-                  </TouchableOpacity>
+                  <View style={styles.keyboardControls}>
+                    <TouchableOpacity
+                      style={styles.toggleButton}
+                      onPress={() => setIsCapsLockOn(!isCapsLockOn)}
+                    >
+                      <Text style={styles.toggleButtonText}>
+                        {isCapsLockOn ? 'CAPS' : 'done'}
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.doneButton}
+                      onPress={() => Keyboard.dismiss()}
+                    >
+                      <Text style={styles.doneButtonText}>
+                        {isCapsLockOn ? 'Enter' : 'Done'}
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               ) : (
                 <Text style={styles.yamlText}>
@@ -609,6 +625,29 @@ const styles = StyleSheet.create({
   doneButtonText: {
     color: '#fff',
     fontSize: 14,
+    fontWeight: '600',
+  },
+  keyboardControls: {
+    position: 'absolute',
+    bottom: 10,
+    right: 10,
+    flexDirection: 'row',
+    gap: 8,
+  },
+  toggleButton: {
+    backgroundColor: '#6b7280',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 6,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  toggleButtonText: {
+    color: '#fff',
+    fontSize: 12,
     fontWeight: '600',
   },
   yamlText: {
