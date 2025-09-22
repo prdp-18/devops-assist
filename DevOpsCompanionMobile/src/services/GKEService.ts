@@ -336,9 +336,8 @@ export class GKEService {
   static async scaleDeployment(clusterName: string, clusterLocation: string, namespace: string, deploymentName: string, replicas: number): Promise<void> {
     try {
       await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments/${deploymentName}/scale?cluster_location=${clusterLocation}`,
-        'POST',
-        { replicas }
+        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/deployments/${deploymentName}/scale?cluster_location=${clusterLocation}&replicas=${replicas}`,
+        'POST'
       );
     } catch (error) {
       console.error('Failed to scale deployment:', error);

@@ -53,6 +53,47 @@ export default function GKEPodsScreen({
   const [podDetails, setPodDetails] = useState<any>(null);
   const [showAdvancedOperations, setShowAdvancedOperations] = useState(false);
 
+  const getAgeFromTimestamp = (timestamp: string): string => {
+    try {
+      const created = new Date(timestamp);
+      const now = new Date();
+      const diffMs = now.getTime() - created.getTime();
+      const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const diffHours = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+      const diffMinutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+      
+      if (diffDays > 0) {
+        return `${diffDays}d${diffHours}h`;
+      } else if (diffHours > 0) {
+        return `${diffHours}h${diffMinutes}m`;
+      } else {
+        return `${diffMinutes}m`;
+      }
+    } catch (error) {
+      return 'Unknown';
+    }
+  };
+
+  const getReadyState = (pod: GKEPod): string => {
+    try {
+      // Check if pod has containers array
+      if (pod.containers && Array.isArray(pod.containers)) {
+        const totalContainers = pod.containers.length;
+        const readyContainers = pod.containers.filter((container: any) => container.ready).length;
+        return `${readyContainers}/${totalContainers}`;
+      }
+      
+      // Fallback to status.ready if containers array not available
+      if (pod.status?.ready !== undefined) {
+        return pod.status.ready ? '1/1' : '0/1';
+      }
+      
+      return '0/1';
+    } catch (error) {
+      return '0/1';
+    }
+  };
+
   useEffect(() => {
     loadPods();
   }, []);
@@ -194,13 +235,13 @@ export default function GKEPodsScreen({
         <View style={styles.podInfo}>
           <Text style={styles.podName}>{pod.name}</Text>
           <View style={styles.podStats}>
-            <Text style={styles.podStat}>Ready: {pod.ready}</Text>
-            <Text style={styles.podStat}>Age: {pod.age}</Text>
+            <Text style={styles.podStat}>Ready: {getReadyState(pod)}</Text>
+            <Text style={styles.podStat}>Age: {pod.creation_timestamp ? getAgeFromTimestamp(pod.creation_timestamp) : 'Unknown'}</Text>
           </View>
           <View style={styles.podStats}>
             <Text style={styles.podStat}>CPU: {pod.cpu || '0 cores'}</Text>
             <Text style={styles.podStat}>Memory: {pod.memory || '0 MB'}</Text>
-            <Text style={styles.podStat}>Restarts: {pod.restarts || 0}</Text>
+            <Text style={styles.podStat}>Restarts: {pod.status?.restart_count || 0}</Text>
           </View>
         </View>
         <View style={styles.podActions}>
