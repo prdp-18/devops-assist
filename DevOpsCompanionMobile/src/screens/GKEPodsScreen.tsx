@@ -199,7 +199,20 @@ export default function GKEPodsScreen({
         setOptionsModalVisible(false);
         loadPods(); // Refresh the list
       } catch (error) {
-        Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
+        const errorMessage = (error as Error).message;
+        
+        // Handle common Kubernetes pod not found scenarios
+        if (errorMessage.includes('not found') || errorMessage.includes('NotFound')) {
+          Alert.alert(
+            'Pod Not Found', 
+            'This pod may have been terminated. The pod list will be refreshed to show current pods.',
+            [
+              { text: 'OK', onPress: () => loadPods() }
+            ]
+          );
+        } else {
+          Alert.alert('Error', `Failed to restart pod: ${errorMessage}`);
+        }
       }
     } catch (error) {
       Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
@@ -221,7 +234,20 @@ export default function GKEPodsScreen({
       setOptionsModalVisible(false);
     } catch (error) {
       console.error('GKEPodsScreen: Get pod logs error:', error);
-      Alert.alert('Error', `Failed to get pod logs: ${(error as Error).message}`);
+      const errorMessage = (error as Error).message;
+      
+      // Handle common Kubernetes pod not found scenarios
+      if (errorMessage.includes('not found') || errorMessage.includes('NotFound')) {
+        Alert.alert(
+          'Pod Not Found', 
+          'This pod may have been restarted or terminated. The pod list will be refreshed to show current pods.',
+          [
+            { text: 'OK', onPress: () => loadPods() }
+          ]
+        );
+      } else {
+        Alert.alert('Error', `Failed to get pod logs: ${errorMessage}`);
+      }
     } finally {
       setIsViewingLogs(false);
     }
@@ -241,7 +267,20 @@ export default function GKEPodsScreen({
       setOptionsModalVisible(false);
     } catch (error) {
       console.error('GKEPodsScreen: Describe pod error:', error);
-      Alert.alert('Error', `Failed to describe pod: ${(error as Error).message}`);
+      const errorMessage = (error as Error).message;
+      
+      // Handle common Kubernetes pod not found scenarios
+      if (errorMessage.includes('not found') || errorMessage.includes('NotFound')) {
+        Alert.alert(
+          'Pod Not Found', 
+          'This pod may have been restarted or terminated. The pod list will be refreshed to show current pods.',
+          [
+            { text: 'OK', onPress: () => loadPods() }
+          ]
+        );
+      } else {
+        Alert.alert('Error', `Failed to describe pod: ${errorMessage}`);
+      }
     } finally {
       setIsDescribingPod(false);
     }
