@@ -54,8 +54,8 @@ export class BiometricService {
         promptMessage: reason,
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: true, // Force biometric first, don't allow immediate passcode fallback
-        requireConfirmation: true, // Require user confirmation for Face ID
+        disableDeviceFallback: false, // Allow passcode fallback
+        requireConfirmation: false, // Don't require confirmation for development
       });
 
       console.log('Biometric authentication result:', result);
@@ -92,15 +92,23 @@ export class BiometricService {
         promptMessage: reason,
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: true, // Force Face ID first
-        requireConfirmation: true, // Show Face ID confirmation
+        disableDeviceFallback: false, // Allow passcode fallback if Face ID fails
+        requireConfirmation: false, // Don't require confirmation for development
       });
 
       console.log('Face ID authentication result:', result);
+      
+      // If Face ID fails due to configuration, try general biometric
+      if (!result.success && result.error === 'missing_usage_description') {
+        console.log('Face ID configuration missing, trying general biometric authentication');
+        return await this.authenticate(reason);
+      }
+      
       return result.success;
     } catch (error) {
       console.error('Face ID authentication failed:', error);
-      return false;
+      // Fallback to general biometric authentication
+      return await this.authenticate(reason);
     }
   }
 
