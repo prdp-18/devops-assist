@@ -165,6 +165,10 @@ export default function GKEAdvancedOperationsScreen({
     try {
       setIsViewingYaml(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
+      console.log('DEBUG: Loaded YAML content length:', yaml.length);
+      console.log('DEBUG: Loaded YAML line count:', yaml.split('\n').length);
+      console.log('DEBUG: First 200 chars:', yaml.substring(0, 200));
+      console.log('DEBUG: Last 200 chars:', yaml.substring(yaml.length - 200));
       setYamlContent(yaml);
       // Initialize history with the loaded YAML
       setYamlHistory([yaml]);
@@ -770,18 +774,29 @@ export default function GKEAdvancedOperationsScreen({
                   <View style={styles.yamlEditorContainer}>
                     {/* Line Numbers */}
                     <View style={styles.lineNumbersContainer}>
-                      {yamlContent.split('\n').map((_, index) => (
-                        <Text key={index} style={styles.lineNumber}>
-                          {index + 1}
-                        </Text>
-                      ))}
+                      {(() => {
+                        const lines = yamlContent.split('\n');
+                        console.log('DEBUG: Total YAML lines:', lines.length);
+                        console.log('DEBUG: YAML content length:', yamlContent.length);
+                        console.log('DEBUG: First few lines:', lines.slice(0, 5));
+                        console.log('DEBUG: Last few lines:', lines.slice(-5));
+                        return lines.map((_, index) => (
+                          <Text key={index} style={styles.lineNumber}>
+                            {index + 1}
+                          </Text>
+                        ));
+                      })()}
                     </View>
                     {/* YAML Content */}
                     <TextInput
                       ref={textInputRef}
                       style={[styles.yamlInput, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}
                       value={yamlContent}
-                      onChangeText={handleYamlChange}
+                      onChangeText={(text) => {
+                        console.log('DEBUG: YAML content changed, new length:', text.length);
+                        console.log('DEBUG: New line count:', text.split('\n').length);
+                        handleYamlChange(text);
+                      }}
                       multiline
                       textAlignVertical="top"
                       onSubmitEditing={() => {
