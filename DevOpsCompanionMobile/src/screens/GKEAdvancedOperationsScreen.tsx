@@ -771,6 +771,7 @@ export default function GKEAdvancedOperationsScreen({
                     {/* Line Numbers */}
                     <ScrollView 
                       style={styles.lineNumbersContainer}
+                      contentContainerStyle={styles.lineNumbersContent}
                       showsVerticalScrollIndicator={false}
                       scrollEnabled={false}
                     >
@@ -1055,16 +1056,18 @@ const styles = StyleSheet.create({
   },
   lineNumbersContainer: {
     backgroundColor: '#f1f5f9',
-    paddingVertical: 12,
-    paddingHorizontal: 4,
     borderTopLeftRadius: 8,
     borderBottomLeftRadius: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRightWidth: 0,
     width: 30,
-    alignItems: 'center',
     flex: 1,
+  },
+  lineNumbersContent: {
+    paddingVertical: 12,
+    paddingHorizontal: 4,
+    alignItems: 'center',
   },
   lineNumber: {
     fontSize: 12,
