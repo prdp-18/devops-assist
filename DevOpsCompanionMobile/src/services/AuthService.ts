@@ -124,12 +124,31 @@ export class AuthService {
   }
 
   /**
-   * Verify if token is still valid by making a real API call
+   * Verify if token is still valid by checking JWT expiration and making API call
    */
   static async verifyToken(token: string): Promise<boolean> {
     try {
-      // Use a lightweight API endpoint to verify token validity
-      const response = await fetch(`${API_BASE_URL}/api/instances?region=us-east-1`, {
+      console.log('=== TOKEN VERIFICATION START ===');
+      console.log('Token length:', token.length);
+      console.log('Token preview:', token.substring(0, 50) + '...');
+      
+      // First, check if token is a valid JWT format and not expired
+      if (!this.isValidJWTFormat(token)) {
+        console.log('❌ Token is not a valid JWT format');
+        return false;
+      }
+      console.log('✅ Token has valid JWT format');
+
+      // Check if JWT is expired locally (without API call)
+      if (this.isJWTExpired(token)) {
+        console.log('❌ JWT token is expired');
+        return false;
+      }
+      console.log('✅ JWT token is not expired');
+
+      // If JWT looks valid, make an API call to verify with server
+      console.log('🌐 Making API call to verify token with server...');
+      const response = await fetch(`${API_BASE_URL}/api/gcp/clusters`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -137,12 +156,90 @@ export class AuthService {
 
       console.log('Token verification response:', response.status);
       
-      // Token is valid if we get 200 (success) or 500 (server error, but token is valid)
-      // Token is invalid if we get 401 (unauthorized)
-      return response.status !== 401;
+      // Only consider token valid if we get 200 (success)
+      const isValid = response.ok && response.status === 200;
+      
+      if (!isValid) {
+        console.log('❌ Token verification failed with status:', response.status);
+      } else {
+        console.log('✅ Token verification successful');
+      }
+      
+      console.log('=== TOKEN VERIFICATION END ===');
+      return isValid;
     } catch (error) {
-      console.error('Token verification failed:', error);
+      console.error('❌ Token verification failed:', error);
       return false;
+    }
+  }
+
+  /**
+   * Check if token is a valid JWT format
+   */
+  private static isValidJWTFormat(token: string): boolean {
+    try {
+      // JWT should have 3 parts separated by dots
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        return false;
+      }
+
+      // Each part should be base64 encoded
+      for (const part of parts) {
+        if (!part || part.length === 0) {
+          return false;
+        }
+      }
+
+      return true;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Check if JWT token is expired locally
+   */
+  private static isJWTExpired(token: string): boolean {
+    try {
+      console.log('🔍 Checking JWT expiration...');
+      
+      // Decode JWT payload (second part)
+      const parts = token.split('.');
+      if (parts.length !== 3) {
+        console.log('❌ JWT has invalid number of parts:', parts.length);
+        return true; // Invalid format, consider expired
+      }
+
+      // Decode base64 payload
+      const payload = JSON.parse(atob(parts[1]));
+      console.log('📋 JWT payload:', payload);
+      
+      // Check if token has expiration
+      if (!payload.exp) {
+        console.log('❌ JWT has no expiration field');
+        return true; // No expiration, consider expired
+      }
+
+      // Check if token is expired
+      const currentTime = Math.floor(Date.now() / 1000);
+      const expirationTime = payload.exp;
+      const isExpired = expirationTime < currentTime;
+      
+      console.log('⏰ Current time:', new Date(currentTime * 1000));
+      console.log('⏰ Expiration time:', new Date(expirationTime * 1000));
+      console.log('⏰ Time until expiry:', Math.floor((expirationTime - currentTime) / 60), 'minutes');
+      
+      if (isExpired) {
+        console.log('❌ JWT expired at:', new Date(expirationTime * 1000), 'Current time:', new Date());
+      } else {
+        console.log('✅ JWT is not expired');
+      }
+      
+      return isExpired;
+    } catch (error) {
+      console.error('❌ Error checking JWT expiration:', error);
+      return true; // If we can't parse, consider expired
     }
   }
 
