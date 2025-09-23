@@ -92,11 +92,18 @@ export class BiometricService {
         promptMessage: reason,
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: false, // Allow passcode fallback if Face ID fails
-        requireConfirmation: false, // Don't require confirmation for development
+        disableDeviceFallback: true, // Force Face ID first, don't allow immediate passcode fallback
+        requireConfirmation: true, // Show Face ID confirmation
       });
 
       console.log('Face ID authentication result:', result);
+      
+      // Even if there's a warning about missing usage description, 
+      // if success is true, we should accept it
+      if (result.success) {
+        console.log('Face ID authentication successful despite warning');
+        return true;
+      }
       
       // If Face ID fails due to configuration, try general biometric
       if (!result.success && result.error === 'missing_usage_description') {

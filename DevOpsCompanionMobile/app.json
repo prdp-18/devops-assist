@@ -21,7 +21,8 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.devopscompanion.mobile",
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Use Face ID to authenticate critical DevOps operations like restarting pods, scaling deployments, and executing system commands."
+        "NSFaceIDUsageDescription": "Use Face ID to authenticate critical DevOps operations like restarting pods, scaling deployments, and executing system commands.",
+        "NSLocalAuthenticationUsageDescription": "Use biometric authentication to secure critical DevOps operations."
       }
     },
     "android": {
