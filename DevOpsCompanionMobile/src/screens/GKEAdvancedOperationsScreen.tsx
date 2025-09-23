@@ -12,6 +12,7 @@ import {
   ScrollView,
   TextInput,
   Keyboard,
+  KeyboardAvoidingView,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -391,7 +392,7 @@ export default function GKEAdvancedOperationsScreen({
                         setYamlContent(prev => prev + '\n');
                       }}
                     >
-                      <Ionicons name="return-up" size={16} color="#fff" />
+                      <Ionicons name="arrow-up" size={16} color="#fff" />
                       <Text style={styles.enterButtonText}>ENTER</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
@@ -634,33 +635,34 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  keyboardControls: {
-    position: 'absolute',
-    bottom: 20,
-    right: 20,
-    flexDirection: 'row',
-    gap: 12,
-    zIndex: 1000,
+  modalContainer: {
+    flex: 1,
+    backgroundColor: '#fff',
   },
-  enterButton: {
-    backgroundColor: '#059669',
-    paddingHorizontal: 16,
+  keyboardAccessory: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 12,
+    backgroundColor: '#f8f9fa',
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  accessoryButton: {
+    backgroundColor: '#2563eb',
+    paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    minWidth: 80,
+    gap: 8,
+    flex: 1,
+    marginHorizontal: 4,
   },
-  enterButtonText: {
+  accessoryButtonText: {
     color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
   yamlText: {
     fontSize: 14,
