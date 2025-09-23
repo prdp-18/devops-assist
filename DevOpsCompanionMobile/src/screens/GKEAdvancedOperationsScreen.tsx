@@ -13,6 +13,7 @@ import {
   TextInput,
   Keyboard,
   KeyboardAvoidingView,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -363,47 +364,29 @@ export default function GKEAdvancedOperationsScreen({
             </View>
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
-                <View style={styles.textInputContainer}>
-                  <TextInput
-                    ref={textInputRef}
-                    style={styles.yamlInput}
-                    value={yamlContent}
-                    onChangeText={setYamlContent}
-                    multiline
-                    textAlignVertical="top"
-                    fontFamily="monospace"
-                    onBlur={() => Keyboard.dismiss()}
-                    onSubmitEditing={() => {
-                      // Default behavior - add newline
-                      setYamlContent(prev => prev + '\n');
-                    }}
-                    returnKeyType="default"
-                    blurOnSubmit={false}
-                    keyboardType="default"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    enablesReturnKeyAutomatically={false}
-                  />
-                  <View style={styles.keyboardControls}>
-                    <TouchableOpacity
-                      style={styles.enterButton}
-                      onPress={() => {
-                        // Add newline to YAML content
+                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+                  <View style={styles.textInputContainer}>
+                    <TextInput
+                      ref={textInputRef}
+                      style={styles.yamlInput}
+                      value={yamlContent}
+                      onChangeText={setYamlContent}
+                      multiline
+                      textAlignVertical="top"
+                      fontFamily="monospace"
+                      onSubmitEditing={() => {
+                        // Return key adds newline
                         setYamlContent(prev => prev + '\n');
                       }}
-                    >
-                      <Ionicons name="arrow-up" size={16} color="#fff" />
-                      <Text style={styles.enterButtonText}>ENTER</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.doneButton}
-                      onPress={() => Keyboard.dismiss()}
-                    >
-                      <Ionicons name="checkmark" size={16} color="#fff" />
-                      <Text style={styles.doneButtonText}>DONE</Text>
-                    </TouchableOpacity>
+                      returnKeyType="default"
+                      blurOnSubmit={false}
+                      keyboardType="default"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      enablesReturnKeyAutomatically={false}
+                    />
                   </View>
-                </View>
+                </TouchableWithoutFeedback>
               ) : (
                 <Text style={styles.yamlText}>
                   {yamlContent}
@@ -615,54 +598,9 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
     paddingBottom: 50, // Space for Done button
   },
-  doneButton: {
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderRadius: 8,
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    minWidth: 80,
-  },
-  doneButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '700',
-  },
   modalContainer: {
     flex: 1,
     backgroundColor: '#fff',
-  },
-  keyboardAccessory: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#f8f9fa',
-    borderTopWidth: 1,
-    borderTopColor: '#e2e8f0',
-  },
-  accessoryButton: {
-    backgroundColor: '#2563eb',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flex: 1,
-    marginHorizontal: 4,
-  },
-  accessoryButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
   },
   yamlText: {
     fontSize: 14,
