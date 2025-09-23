@@ -253,6 +253,38 @@ export default function AWSInstancesScreen() {
 
   const executeCommand = async (instance: AWSInstance, command: string) => {
     try {
+      // Check if biometric authentication is available
+      const isBiometricAvailable = await BiometricService.isAvailable();
+      
+      if (isBiometricAvailable) {
+        // Require biometric authentication for system commands
+        const authMethod = await BiometricService.getAuthenticationMethodName();
+        const authenticated = await BiometricService.authenticateForCriticalAction(
+          `Execute system command "${command}" on ${instance.name}`
+        );
+        
+        if (!authenticated) {
+          Alert.alert('Authentication Required', `Please authenticate with ${authMethod} to execute system commands.`);
+          return;
+        }
+      } else {
+        // Fallback: Show confirmation dialog if biometric is not available
+        const confirmed = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Confirm System Command',
+            `Are you sure you want to execute "${command}" on ${instance.name}?`,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Execute', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+
       console.log('Executing command:', command, 'on:', instance.name, instance.region);
       const result = await AWSService.executeSystemCommand(instance.name, command, instance.region);
       
@@ -294,14 +326,14 @@ export default function AWSInstancesScreen() {
   const InstanceCard = ({ instance }: { instance: AWSInstance }) => {
     console.log('Rendering InstanceCard for:', instance.name);
     return (
-      <TouchableOpacity
-        style={styles.instanceCard}
-        onPress={() => {
+    <TouchableOpacity
+      style={styles.instanceCard}
+      onPress={() => {
           console.log('AWS Instance card clicked:', instance.name);
           console.log('Setting selectedInstance and opening modal');
-          setSelectedInstance(instance);
-          setModalVisible(true);
-        }}
+        setSelectedInstance(instance);
+        setModalVisible(true);
+      }}
         activeOpacity={0.7}
         accessible={true}
         accessibilityLabel={`AWS Instance ${instance.name}`}
@@ -309,7 +341,7 @@ export default function AWSInstancesScreen() {
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
         delayPressIn={0}
         delayPressOut={0}
-      >
+    >
       <View style={styles.instanceHeader}>
         <View style={styles.instanceInfo}>
           <Text style={styles.instanceName}>{instance.name}</Text>
@@ -330,8 +362,8 @@ export default function AWSInstancesScreen() {
           </View>
         )}
       </View>
-      </TouchableOpacity>
-    );
+    </TouchableOpacity>
+  );
   };
 
   const getModalActions = () => {

@@ -283,7 +283,7 @@ export default function GKEClustersScreen() {
             namespace: 'all',
           });
           setCurrentView('pods');
-          setModalVisible(false);
+                setModalVisible(false);
         },
         disabled: isGettingHealth || isGettingNamespaces || isGettingNodes,
       },

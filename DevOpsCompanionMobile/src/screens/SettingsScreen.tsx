@@ -85,14 +85,6 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
     }
   };
 
-  const handleClearToken = async () => {
-    try {
-      await AuthService.clearStoredToken();
-      Alert.alert('Success', 'Token cleared! Please restart the app to see login page.');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to clear token');
-    }
-  };
 
   const handleClearCache = () => {
     Alert.alert(
@@ -294,17 +286,6 @@ export default function SettingsScreen({ onLogout }: SettingsScreenProps) {
             title="Logout"
             subtitle="Sign out of your account"
             onPress={handleLogout}
-            danger={true}
-          />
-        </View>
-
-        {/* Debug Section */}
-        <View style={styles.section}>
-          <SettingItem
-            icon="trash"
-            title="Clear Token (Debug)"
-            subtitle="Clear stored authentication token"
-            onPress={handleClearToken}
             danger={true}
           />
         </View>

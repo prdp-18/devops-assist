@@ -21,6 +21,7 @@ import * as Sharing from 'expo-sharing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
+import { BiometricService } from '../services/BiometricService';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
 import EmptyState from '../components/EmptyState';
@@ -176,6 +177,38 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource || !yamlContent) return;
     
     try {
+      // Check if biometric authentication is available
+      const isBiometricAvailable = await BiometricService.isAvailable();
+      
+      if (isBiometricAvailable) {
+        // Require biometric authentication for YAML editing
+        const authMethod = await BiometricService.getAuthenticationMethodName();
+        const authenticated = await BiometricService.authenticateForCriticalAction(
+          `Edit ${resourceType.slice(0, -1)} "${selectedResource.name}"`
+        );
+        
+        if (!authenticated) {
+          Alert.alert('Authentication Required', `Please authenticate with ${authMethod} to edit YAML files.`);
+          return;
+        }
+      } else {
+        // Fallback: Show confirmation dialog if biometric is not available
+        const confirmed = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Confirm YAML Edit',
+            `Are you sure you want to update ${resourceType.slice(0, -1)} "${selectedResource.name}"?`,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Update', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+
       await GKEService.updateResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name, yamlContent);
       Alert.alert('Success', `${resourceType.slice(0, -1)} updated successfully`);
       setYamlModalVisible(false);
@@ -369,12 +402,11 @@ export default function GKEAdvancedOperationsScreen({
                 <View style={styles.textInputContainer}>
                   <TextInput
                     ref={textInputRef}
-                    style={styles.yamlInput}
+                    style={[styles.yamlInput, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}
                     value={yamlContent}
                     onChangeText={setYamlContent}
                     multiline
                     textAlignVertical="top"
-                    fontFamily="monospace"
                     onSubmitEditing={() => {
                       // Return key adds newline
                       setYamlContent(prev => prev + '\n');

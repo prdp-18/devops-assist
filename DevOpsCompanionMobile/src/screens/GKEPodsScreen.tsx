@@ -14,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
+import { BiometricService } from '../services/BiometricService';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
 import EmptyState from '../components/EmptyState';
@@ -150,28 +151,47 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
-      Alert.alert(
-        'Restart Pod',
-        `Are you sure you want to restart pod "${selectedPod.name}"?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { 
-            text: 'Restart', 
-            style: 'destructive',
-            onPress: async () => {
-              try {
-                // Call restart pod API
-                await GKEService.restartPod(clusterName, location, selectedPod.namespace, selectedPod.name);
-                Alert.alert('Success', 'Pod restart initiated');
-                setOptionsModalVisible(false);
-                loadPods(); // Refresh the list
-              } catch (error) {
-                Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
-              }
-            }
-          }
-        ]
-      );
+      // Check if biometric authentication is available
+      const isBiometricAvailable = await BiometricService.isAvailable();
+      
+      if (isBiometricAvailable) {
+        // Require biometric authentication for pod restart
+        const authMethod = await BiometricService.getAuthenticationMethodName();
+        const authenticated = await BiometricService.authenticateForCriticalAction(
+          `Restart pod "${selectedPod.name}"`
+        );
+        
+        if (!authenticated) {
+          Alert.alert('Authentication Required', `Please authenticate with ${authMethod} to restart pods.`);
+          return;
+        }
+      } else {
+        // Fallback: Show confirmation dialog if biometric is not available
+        const confirmed = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Confirm Pod Restart',
+            `Are you sure you want to restart pod "${selectedPod.name}"?`,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Restart', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+
+      try {
+        // Call restart pod API
+        await GKEService.restartPod(clusterName, location, selectedPod.namespace, selectedPod.name);
+        Alert.alert('Success', 'Pod restart initiated');
+        setOptionsModalVisible(false);
+        loadPods(); // Refresh the list
+      } catch (error) {
+        Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
+      }
     } catch (error) {
       Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
     }
@@ -242,6 +262,37 @@ export default function GKEPodsScreen({
       
       console.log('GKEPodsScreen: Found deployment name:', deploymentName);
       
+      // First check for biometric authentication before showing scale dialog
+      const isBiometricAvailable = await BiometricService.isAvailable();
+      
+      if (isBiometricAvailable) {
+        const authMethod = await BiometricService.getAuthenticationMethodName();
+        const authenticated = await BiometricService.authenticateForCriticalAction(
+          `Scale deployment "${deploymentName}"`
+        );
+        
+        if (!authenticated) {
+          Alert.alert('Authentication Required', `Please authenticate with ${authMethod} to scale deployments.`);
+          return;
+        }
+      } else {
+        // Fallback: Show confirmation dialog if biometric is not available
+        const confirmed = await new Promise<boolean>((resolve) => {
+          Alert.alert(
+            'Confirm Scale Deployment',
+            `Are you sure you want to scale deployment "${deploymentName}"?`,
+            [
+              { text: 'Cancel', onPress: () => resolve(false), style: 'cancel' },
+              { text: 'Confirm', onPress: () => resolve(true), style: 'destructive' }
+            ]
+          );
+        });
+        
+        if (!confirmed) {
+          return;
+        }
+      }
+
       Alert.prompt(
         'Scale Deployment',
         `Enter new replica count for deployment "${deploymentName}":`,
