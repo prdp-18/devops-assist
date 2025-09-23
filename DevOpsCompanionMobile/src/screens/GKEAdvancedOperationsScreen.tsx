@@ -769,18 +769,13 @@ export default function GKEAdvancedOperationsScreen({
                 <View style={styles.textInputContainer}>
                   <View style={styles.yamlEditorContainer}>
                     {/* Line Numbers */}
-                    <ScrollView 
-                      style={styles.lineNumbersContainer}
-                      contentContainerStyle={styles.lineNumbersContent}
-                      showsVerticalScrollIndicator={false}
-                      scrollEnabled={false}
-                    >
+                    <View style={styles.lineNumbersContainer}>
                       {yamlContent.split('\n').map((_, index) => (
                         <Text key={index} style={styles.lineNumber}>
                           {index + 1}
                         </Text>
                       ))}
-                    </ScrollView>
+                    </View>
                     {/* YAML Content */}
                     <TextInput
                       ref={textInputRef}
@@ -864,7 +859,7 @@ export default function GKEAdvancedOperationsScreen({
                     <Ionicons name="save" size={14} color="#fff" />
                   )}
                   <Text style={styles.saveButtonText}>
-                    {isSavingYaml ? 'Saving...' : 'Save Changes'}
+                    {isSavingYaml ? 'Saving...' : 'Save'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1056,18 +1051,16 @@ const styles = StyleSheet.create({
   },
   lineNumbersContainer: {
     backgroundColor: '#f1f5f9',
+    paddingVertical: 12,
+    paddingHorizontal: 4,
     borderTopLeftRadius: 8,
     borderBottomLeftRadius: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRightWidth: 0,
     width: 30,
-    flex: 1,
-  },
-  lineNumbersContent: {
-    paddingVertical: 12,
-    paddingHorizontal: 4,
     alignItems: 'center',
+    justifyContent: 'flex-start',
   },
   lineNumber: {
     fontSize: 12,
@@ -1091,6 +1084,7 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     borderLeftWidth: 0,
     textAlignVertical: 'top',
+    lineHeight: 20,
     paddingBottom: 50, // Space for Done button
   },
   yamlText: {
@@ -1105,32 +1099,32 @@ const styles = StyleSheet.create({
   },
   yamlActions: {
     flexDirection: 'row',
-    padding: 8,
+    padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    gap: 6,
+    gap: 8,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#f8fafc',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
   cancelButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     fontWeight: '500',
   },
   undoButton: {
     flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#f0f9ff',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2563eb',
@@ -1142,20 +1136,20 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   undoButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#2563eb',
     fontWeight: '500',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   undoButtonTextDisabled: {
     color: '#9ca3af',
   },
   redoButton: {
     flex: 1,
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#f0f9ff',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#2563eb',
@@ -1167,10 +1161,10 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   redoButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#2563eb',
     fontWeight: '500',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   redoButtonTextDisabled: {
     color: '#9ca3af',
@@ -1178,18 +1172,18 @@ const styles = StyleSheet.create({
   saveButton: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 6,
-    paddingHorizontal: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
     backgroundColor: '#2563eb',
-    borderRadius: 6,
+    borderRadius: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonText: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#fff',
     fontWeight: '500',
-    marginLeft: 4,
+    marginLeft: 6,
   },
   copyButton: {
     flex: 1,
