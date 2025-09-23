@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { AuthService } from '../services/AuthService';
 import { BiometricService } from '../services/BiometricService';
 import { GKEService, GKECluster } from '../services/GKEService';
+import { ErrorHandler } from '../services/ErrorHandler';
 import ActionModal from '../components/ActionModal';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
@@ -62,7 +63,7 @@ export default function GKEClustersScreen() {
       setClusters(data);
     } catch (error) {
       console.error('Failed to load clusters:', error);
-      Alert.alert('Error', 'Failed to load GKE clusters. Please check your connection and try again.');
+      await ErrorHandler.handleApiError(error as Error, 'Loading GKE clusters');
     } finally {
       setIsLoading(false);
     }
@@ -232,8 +233,8 @@ export default function GKEClustersScreen() {
     }
   };
 
-  const navigateToPods = (namespace: string) => {
-    setNavigationStack(prev => ({ ...prev, namespace }));
+  const navigateToPods = (namespace: string, pods?: any[]) => {
+    setNavigationStack(prev => ({ ...prev, namespace, pods }));
     setCurrentView('pods');
   };
 
@@ -310,6 +311,7 @@ export default function GKEClustersScreen() {
         namespace={navigationStack.namespace}
         onBack={navigateBack}
         onNavigateToAdvanced={navigateToAdvanced}
+        initialPods={navigationStack.pods}
       />
     );
   }

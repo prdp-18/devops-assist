@@ -12,6 +12,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
+import { ErrorHandler } from '../services/ErrorHandler';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
 import EmptyState from '../components/EmptyState';
@@ -28,7 +29,7 @@ interface GKENamespacesScreenProps {
   clusterName: string;
   location: string;
   onBack: () => void;
-  onViewPods: (namespace: string) => void;
+  onViewPods: (namespace: string, pods?: any[]) => void;
 }
 
 export default function GKENamespacesScreen({ 
@@ -41,6 +42,7 @@ export default function GKENamespacesScreen({
   const [isLoading, setIsLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [namespacePodCounts, setNamespacePodCounts] = useState<Record<string, number>>({});
+  const [allPods, setAllPods] = useState<any[]>([]);
 
   useEffect(() => {
     loadNamespaces();
@@ -83,7 +85,7 @@ export default function GKENamespacesScreen({
       setNamespaces(namespaceObjects);
     } catch (error) {
       console.error('Failed to load namespaces:', error);
-      Alert.alert('Error', `Failed to load namespaces: ${(error as Error).message}`);
+      await ErrorHandler.handleApiError(error as Error, 'Loading namespaces');
     } finally {
       setIsLoading(false);
     }
@@ -92,25 +94,31 @@ export default function GKENamespacesScreen({
   const loadPodCounts = async () => {
     try {
       console.log('Loading pod counts for namespaces...');
-      const podCounts: Record<string, number> = {};
       
-      // Load pod counts for each namespace in parallel
-      const promises = namespaces.map(async (namespace) => {
-        try {
-          const pods = await GKEService.getPods(clusterName, location, namespace.name);
-          podCounts[namespace.name] = pods.length;
-          console.log(`Namespace ${namespace.name}: ${pods.length} pods`);
-        } catch (error) {
-          console.error(`Failed to load pods for namespace ${namespace.name}:`, error);
-          podCounts[namespace.name] = 0;
-        }
+      // Get all pods at once instead of individual calls per namespace
+      const allPods = await GKEService.getAllPods(clusterName, location);
+      console.log('Loaded all pods for counting:', allPods.length);
+      
+      // Store the pod data for later use
+      setAllPods(allPods);
+      
+      // Group pods by namespace
+      const podCounts: Record<string, number> = {};
+      namespaces.forEach(namespace => {
+        podCounts[namespace.name] = allPods.filter(pod => pod.namespace === namespace.name).length;
+        console.log(`Namespace ${namespace.name}: ${podCounts[namespace.name]} pods`);
       });
       
-      await Promise.all(promises);
       setNamespacePodCounts(podCounts);
       console.log('Pod counts loaded:', podCounts);
     } catch (error) {
       console.error('Failed to load pod counts:', error);
+      // Set all counts to 0 on error
+      const podCounts: Record<string, number> = {};
+      namespaces.forEach(namespace => {
+        podCounts[namespace.name] = 0;
+      });
+      setNamespacePodCounts(podCounts);
     }
   };
 
@@ -126,7 +134,7 @@ const onRefresh = async () => {
     return (
       <TouchableOpacity
         style={styles.namespaceCard}
-        onPress={() => onViewPods(namespace.name)}
+        onPress={() => onViewPods(namespace.name, allPods)}
         activeOpacity={0.7}
       >
         <View style={styles.namespaceHeader}>
@@ -139,7 +147,7 @@ const onRefresh = async () => {
           <View style={styles.namespaceActions}>
             <TouchableOpacity
               style={styles.viewPodsButton}
-              onPress={() => onViewPods(namespace.name)}
+              onPress={() => onViewPods(namespace.name, allPods)}
             >
               <Ionicons name="cube" size={16} color="#2563eb" />
               <Text style={styles.viewPodsText}>View Pods</Text>

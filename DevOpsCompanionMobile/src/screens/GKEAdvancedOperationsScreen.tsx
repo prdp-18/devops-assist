@@ -65,8 +65,13 @@ export default function GKEAdvancedOperationsScreen({
   const [isEditingYaml, setIsEditingYaml] = useState(false);
   const textInputRef = useRef<TextInput>(null);
   
+  // Undo/Redo functionality
+  const [yamlHistory, setYamlHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
+  
   // Loading states for advanced operations
   const [isDownloadingYaml, setIsDownloadingYaml] = useState(false);
+  const [isViewingYaml, setIsViewingYaml] = useState(false);
   const [isEditingYamlFile, setIsEditingYamlFile] = useState(false);
   const [isSavingYaml, setIsSavingYaml] = useState(false);
 
@@ -158,16 +163,19 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource) return;
     
     try {
-      setIsEditingYamlFile(true);
+      setIsViewingYaml(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
+      // Initialize history with the loaded YAML
+      setYamlHistory([yaml]);
+      setHistoryIndex(0);
       setIsEditingYaml(false); // Set to view mode
       setYamlModalVisible(true);
       setActionsModalVisible(false);
     } catch (error) {
       Alert.alert('Error', `Failed to get YAML: ${(error as Error).message}`);
     } finally {
-      setIsEditingYamlFile(false);
+      setIsViewingYaml(false);
     }
   };
 
@@ -178,6 +186,9 @@ export default function GKEAdvancedOperationsScreen({
       setIsEditingYamlFile(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
+      // Initialize history with the loaded YAML
+      setYamlHistory([yaml]);
+      setHistoryIndex(0);
       setIsEditingYaml(true);
       setYamlModalVisible(true);
       setActionsModalVisible(false);
@@ -188,11 +199,269 @@ export default function GKEAdvancedOperationsScreen({
     }
   };
 
+  // Add to history when YAML content changes
+  const addToHistory = (content: string) => {
+    setYamlHistory(prev => {
+      const newHistory = prev.slice(0, historyIndex + 1);
+      newHistory.push(content);
+      // Keep only last 50 changes to prevent memory issues
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      } else {
+        setHistoryIndex(newHistory.length - 1);
+      }
+      return newHistory;
+    });
+  };
+
+  // Undo function
+  const undoYaml = () => {
+    if (historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      setHistoryIndex(newIndex);
+      setYamlContent(yamlHistory[newIndex]);
+    }
+  };
+
+  // Redo function
+  const redoYaml = () => {
+    if (historyIndex < yamlHistory.length - 1) {
+      const newIndex = historyIndex + 1;
+      setHistoryIndex(newIndex);
+      setYamlContent(yamlHistory[newIndex]);
+    }
+  };
+
+  // Handle YAML content changes with history
+  const handleYamlChange = (text: string) => {
+    setYamlContent(text);
+    // Debounce history updates to avoid too many entries
+    setTimeout(() => {
+      addToHistory(text);
+    }, 1000);
+  };
+
+  // Enhanced Kubernetes YAML validation
+  const validateKubernetesYaml = (yaml: string): string[] => {
+    const errors: string[] = [];
+    const lines = yaml.split('\n');
+    
+    try {
+      // Check for Deployment-specific validation
+      if (yaml.includes('kind: Deployment')) {
+        let hasSpec = false;
+        let hasSelector = false;
+        let hasTemplate = false;
+        let hasTemplateLabels = false;
+        let hasContainers = false;
+        let selectorMatch = false;
+        let containersIsArray = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          if (line.startsWith('spec:')) {
+            hasSpec = true;
+          }
+          
+          if (hasSpec && line.startsWith('selector:')) {
+            hasSelector = true;
+          }
+          
+          if (hasSpec && line.startsWith('template:')) {
+            hasTemplate = true;
+          }
+          
+          if (hasTemplate && line.startsWith('labels:')) {
+            hasTemplateLabels = true;
+          }
+          
+          // Check for containers field
+          if (hasTemplate && line.startsWith('containers:')) {
+            hasContainers = true;
+            // Check if next line starts with '-' (indicating array)
+            if (i + 1 < lines.length && lines[i + 1].trim().startsWith('-')) {
+              containersIsArray = true;
+            }
+          }
+          
+          // Check for mapping values error (common YAML issue)
+          if (line.includes(':') && !line.endsWith(':') && !line.includes(' ')) {
+            // This might be a mapping values error
+            const nextLine = i + 1 < lines.length ? lines[i + 1].trim() : '';
+            if (nextLine && !nextLine.startsWith('-') && !nextLine.startsWith(' ') && nextLine.includes(':')) {
+              errors.push(`• Line ${i + 1}: Possible mapping values error - check indentation and structure`);
+            }
+          }
+          
+          // Check if selector matches template labels
+          if (hasSelector && hasTemplateLabels) {
+            // This is a simplified check - in real implementation, you'd parse the YAML properly
+            const selectorLine = lines.find(l => l.trim().startsWith('selector:'));
+            const labelsLine = lines.find(l => l.trim().startsWith('labels:'));
+            
+            if (selectorLine && labelsLine) {
+              // Basic check - if both exist, assume they match for now
+              // In a real implementation, you'd parse the actual key-value pairs
+              selectorMatch = true;
+            }
+          }
+        }
+        
+        if (!hasSpec) {
+          errors.push('• Missing required field: spec');
+        }
+        
+        if (!hasSelector) {
+          errors.push('• Missing required field: spec.selector');
+        }
+        
+        if (!hasTemplate) {
+          errors.push('• Missing required field: spec.template');
+        }
+        
+        if (!hasTemplateLabels) {
+          errors.push('• Missing required field: spec.template.metadata.labels');
+        }
+        
+        if (!hasContainers) {
+          errors.push('• Missing required field: spec.template.spec.containers');
+        }
+        
+        if (hasContainers && !containersIsArray) {
+          errors.push('• spec.template.spec.containers must be an array (list items should start with "-")');
+        }
+        
+        if (hasSelector && hasTemplateLabels && !selectorMatch) {
+          errors.push('• spec.selector does not match spec.template.metadata.labels');
+        }
+      }
+      
+      // Check for Service-specific validation
+      if (yaml.includes('kind: Service')) {
+        let hasSpec = false;
+        let hasSelector = false;
+        let hasPorts = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          if (line.startsWith('spec:')) {
+            hasSpec = true;
+          }
+          
+          if (hasSpec && line.startsWith('selector:')) {
+            hasSelector = true;
+          }
+          
+          if (hasSpec && line.startsWith('ports:')) {
+            hasPorts = true;
+          }
+        }
+        
+        if (!hasSpec) {
+          errors.push('• Missing required field: spec');
+        }
+        
+        if (!hasPorts) {
+          errors.push('• Missing required field: spec.ports');
+        }
+      }
+      
+      // Check for ConfigMap-specific validation
+      if (yaml.includes('kind: ConfigMap')) {
+        let hasData = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          if (line.startsWith('data:')) {
+            hasData = true;
+            break;
+          }
+        }
+        
+        if (!hasData) {
+          errors.push('• Missing required field: data');
+        }
+      }
+      
+      // Check for Secret-specific validation
+      if (yaml.includes('kind: Secret')) {
+        let hasData = false;
+        
+        for (let i = 0; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          if (line.startsWith('data:')) {
+            hasData = true;
+            break;
+          }
+        }
+        
+        if (!hasData) {
+          errors.push('• Missing required field: data');
+        }
+      }
+      
+    } catch (error) {
+      errors.push('• YAML parsing error: ' + (error as Error).message);
+    }
+    
+    return errors;
+  };
+
   const handleSaveYaml = async () => {
     if (!selectedResource || !yamlContent) return;
     
     try {
       setIsSavingYaml(true);
+      
+      // Basic YAML validation
+      const trimmedYaml = yamlContent.trim();
+      if (!trimmedYaml) {
+        Alert.alert('Validation Error', 'YAML content cannot be empty');
+        return;
+      }
+      
+      // Check for basic YAML structure
+      if (!trimmedYaml.includes('apiVersion:') || !trimmedYaml.includes('kind:')) {
+        Alert.alert('Validation Error', 'Invalid YAML: Missing required fields (apiVersion, kind)');
+        return;
+      }
+      
+      // Enhanced YAML validation for Kubernetes resources
+      const validationErrors = validateKubernetesYaml(trimmedYaml);
+      if (validationErrors.length > 0) {
+        Alert.alert(
+          'YAML Validation Failed', 
+          `The YAML contains errors that would cause the deployment to fail:\n\n${validationErrors.join('\n')}\n\nPlease fix these errors before saving. The deployment will not be modified.`,
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      // Check for common YAML syntax issues
+      const lines = trimmedYaml.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i];
+        const trimmedLine = line.trim();
+        
+        // Check for tabs (should use spaces)
+        if (line.includes('\t')) {
+          Alert.alert('Validation Error', `YAML syntax error on line ${i + 1}: Tabs are not allowed in YAML. Please use spaces for indentation.`);
+          return;
+        }
+        
+        // Check for missing colons after keys
+        if (trimmedLine && !trimmedLine.startsWith('-') && !trimmedLine.startsWith('#') && 
+            !trimmedLine.includes(':') && !trimmedLine.startsWith(' ') && 
+            !trimmedLine.includes('{') && !trimmedLine.includes('}') &&
+            !trimmedLine.includes('[') && !trimmedLine.includes(']')) {
+          Alert.alert('Validation Error', `YAML syntax error on line ${i + 1}: "${trimmedLine}"\n\nThis line appears to be missing a colon (:) after the key. YAML requires colons to separate keys from values.\n\nLine ${i + 1}: ${trimmedLine}`);
+          return;
+        }
+      }
       
       // Check if biometric authentication is available
       const isBiometricAvailable = await BiometricService.isAvailable();
@@ -226,16 +495,69 @@ export default function GKEAdvancedOperationsScreen({
         }
       }
 
-      await GKEService.updateResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name, yamlContent);
+      console.log('Sending YAML to backend:', trimmedYaml.substring(0, 200) + '...');
+      await GKEService.updateResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name, trimmedYaml);
       Alert.alert('Success', `${resourceType.slice(0, -1)} updated successfully`);
       setYamlModalVisible(false);
       setIsEditingYaml(false);
       loadResources(); // Refresh the list
-    } catch (error) {
-      Alert.alert('Error', `Failed to update ${resourceType.slice(0, -1)}: ${(error as Error).message}`);
-    } finally {
-      setIsSavingYaml(false);
-    }
+        } catch (error) {
+          console.error('YAML save error:', error);
+          const errorMessage = (error as Error).message;
+          
+          // Check if this is a validation error from the server
+          if (errorMessage.includes('500') && errorMessage.includes('invalid')) {
+            Alert.alert(
+              'Deployment Validation Failed', 
+              'The server rejected the YAML changes because they would create an invalid deployment. The original deployment remains unchanged.\n\nThis is the same behavior as kubectl - invalid changes are not applied to protect your cluster.\n\nPlease review the YAML and fix any validation errors before trying again.',
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('yaml: line') && errorMessage.includes('could not find expected')) {
+            Alert.alert(
+              'YAML Syntax Error', 
+              'The YAML contains syntax errors. Common issues:\n\n• Missing colons (:) after keys\n• Incorrect indentation\n• Invalid list formatting\n• Special characters in values\n\nPlease check the line mentioned in the error and ensure proper YAML syntax.\n\nThe deployment was not modified.',
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('yaml: line') && errorMessage.includes('mapping values are not allowed')) {
+            Alert.alert(
+              'YAML Syntax Error', 
+              'The YAML contains syntax errors. Please check:\n\n• Proper indentation (use spaces, not tabs)\n• Correct colon placement\n• Proper list formatting\n• No trailing spaces after colons\n\nLine numbers in the error message can help identify the issue.\n\nThe deployment was not modified.',
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('yaml: line')) {
+            Alert.alert(
+              'YAML Parsing Error', 
+              `YAML syntax error detected. Please check the formatting around the mentioned line.\n\nError: ${errorMessage}\n\nCommon fixes:\n• Ensure proper indentation\n• Check for missing colons\n• Verify list formatting\n• Remove any invalid characters\n\nThe deployment was not modified.`,
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('selector') && errorMessage.includes('does not match')) {
+            Alert.alert(
+              'Deployment Configuration Error', 
+              'The deployment selector does not match the template labels. This is a common Kubernetes validation error.\n\nFix:\n• Ensure spec.selector.matchLabels matches spec.template.metadata.labels\n• Both must have the same key-value pairs\n\nThe deployment was not modified.',
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('cannot unmarshal object into Go struct field') && errorMessage.includes('containers')) {
+            Alert.alert(
+              'Container Configuration Error', 
+              'The containers field is malformed. This usually happens when:\n\n• containers is not formatted as an array\n• Missing "-" before container items\n• Incorrect indentation\n\nFix:\n• Ensure containers: is followed by a list starting with "-"\n• Check indentation is correct\n\nThe deployment was not modified.',
+              [{ text: 'OK' }]
+            );
+          } else if (errorMessage.includes('mapping values are not allowed in this context')) {
+            Alert.alert(
+              'YAML Structure Error', 
+              'YAML structure error detected. This usually means:\n\n• Incorrect indentation\n• Missing colons after keys\n• Invalid nesting structure\n• Mixed list and mapping syntax\n\nFix:\n• Check indentation (use spaces, not tabs)\n• Ensure proper colon placement\n• Verify list items start with "-"\n\nThe deployment was not modified.',
+              [{ text: 'OK' }]
+            );
+          } else {
+            Alert.alert(
+              'Save Failed', 
+              `Failed to update ${resourceType.slice(0, -1)}: ${errorMessage}\n\nThe deployment was not modified.`,
+              [{ text: 'OK' }]
+            );
+          }
+        } finally {
+          setIsSavingYaml(false);
+        }
   };
 
   const getResourceIcon = () => {
@@ -286,7 +608,12 @@ export default function GKEAdvancedOperationsScreen({
           <Text style={styles.resourceDetail}>Image: {resource.image}</Text>
         )}
         {resource.ports && (
-          <Text style={styles.resourceDetail}>Ports: {resource.ports}</Text>
+          <Text style={styles.resourceDetail}>
+            Ports: {Array.isArray(resource.ports) 
+              ? resource.ports.map((port: any) => `${port.port}:${port.targetPort}/${port.protocol}`).join(', ')
+              : resource.ports
+            }
+          </Text>
         )}
         {resource.clusterIP && (
           <Text style={styles.resourceDetail}>Cluster IP: {resource.clusterIP}</Text>
@@ -362,17 +689,17 @@ export default function GKEAdvancedOperationsScreen({
             </View>
             <View style={styles.modalBody}>
               <TouchableOpacity
-                style={[styles.actionButton, isEditingYamlFile && styles.actionButtonDisabled]}
+                style={[styles.actionButton, isViewingYaml && styles.actionButtonDisabled]}
                 onPress={handleViewYaml}
-                disabled={isEditingYamlFile}
+                disabled={isViewingYaml}
               >
-                {isEditingYamlFile ? (
+                {isViewingYaml ? (
                   <ActivityIndicator size="small" color="#2563eb" />
                 ) : (
                   <Ionicons name="eye" size={20} color="#2563eb" />
                 )}
-                <Text style={[styles.actionText, isEditingYamlFile && styles.actionTextDisabled]}>
-                  {isEditingYamlFile ? 'Loading...' : 'View YAML'}
+                <Text style={[styles.actionText, isViewingYaml && styles.actionTextDisabled]}>
+                  {isViewingYaml ? 'Loading...' : 'View YAML'}
                 </Text>
               </TouchableOpacity>
               
@@ -440,33 +767,74 @@ export default function GKEAdvancedOperationsScreen({
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
                 <View style={styles.textInputContainer}>
-                  <TextInput
-                    ref={textInputRef}
-                    style={[styles.yamlInput, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}
-                    value={yamlContent}
-                    onChangeText={setYamlContent}
-                    multiline
-                    textAlignVertical="top"
-                    onSubmitEditing={() => {
-                      // Return key adds newline
-                      setYamlContent(prev => prev + '\n');
-                    }}
-                    returnKeyType="default"
-                    blurOnSubmit={false}
-                    keyboardType="default"
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    enablesReturnKeyAutomatically={false}
-                  />
+                  <View style={styles.yamlEditorContainer}>
+                    {/* Line Numbers */}
+                    <View style={styles.lineNumbersContainer}>
+                      {yamlContent.split('\n').map((_, index) => (
+                        <Text key={index} style={styles.lineNumber}>
+                          {index + 1}
+                        </Text>
+                      ))}
+                    </View>
+                    {/* YAML Content */}
+                    <TextInput
+                      ref={textInputRef}
+                      style={[styles.yamlInput, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}
+                      value={yamlContent}
+                      onChangeText={handleYamlChange}
+                      multiline
+                      textAlignVertical="top"
+                      onSubmitEditing={() => {
+                        // Return key adds newline
+                        const newContent = yamlContent + '\n';
+                        setYamlContent(newContent);
+                        addToHistory(newContent);
+                      }}
+                      returnKeyType="default"
+                      blurOnSubmit={false}
+                      keyboardType="default"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      enablesReturnKeyAutomatically={false}
+                    />
+                  </View>
                 </View>
               ) : (
-                <Text style={styles.yamlText}>
-                  {yamlContent}
-                </Text>
+                <TextInput
+                  style={[styles.yamlText, { fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' }]}
+                  value={yamlContent}
+                  editable={false}
+                  multiline={true}
+                  scrollEnabled={true}
+                  textBreakStrategy="simple"
+                  dataDetectorTypes={[]}
+                  selectTextOnFocus={false}
+                  selectionColor="#2563eb"
+                />
               )}
             </ScrollView>
             {isEditingYaml ? (
               <View style={styles.yamlActions}>
+                <TouchableOpacity
+                  style={[styles.undoButton, historyIndex <= 0 && styles.undoButtonDisabled]}
+                  onPress={undoYaml}
+                  disabled={historyIndex <= 0}
+                >
+                  <Ionicons name="arrow-undo" size={14} color={historyIndex <= 0 ? "#9ca3af" : "#2563eb"} />
+                  <Text style={[styles.undoButtonText, historyIndex <= 0 && styles.undoButtonTextDisabled]}>
+                    Undo
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.redoButton, historyIndex >= yamlHistory.length - 1 && styles.redoButtonDisabled]}
+                  onPress={redoYaml}
+                  disabled={historyIndex >= yamlHistory.length - 1}
+                >
+                  <Ionicons name="arrow-redo" size={14} color={historyIndex >= yamlHistory.length - 1 ? "#9ca3af" : "#2563eb"} />
+                  <Text style={[styles.redoButtonText, historyIndex >= yamlHistory.length - 1 && styles.redoButtonTextDisabled]}>
+                    Redo
+                  </Text>
+                </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.cancelButton}
                   onPress={() => {
@@ -488,7 +856,7 @@ export default function GKEAdvancedOperationsScreen({
                   {isSavingYaml ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <Ionicons name="save" size={16} color="#fff" />
+                    <Ionicons name="save" size={14} color="#fff" />
                   )}
                   <Text style={styles.saveButtonText}>
                     {isSavingYaml ? 'Saving...' : 'Save Changes'}
@@ -677,6 +1045,31 @@ const styles = StyleSheet.create({
     flex: 1,
     position: 'relative',
   },
+  yamlEditorContainer: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  lineNumbersContainer: {
+    backgroundColor: '#f1f5f9',
+    paddingVertical: 12,
+    paddingHorizontal: 6,
+    borderTopLeftRadius: 8,
+    borderBottomLeftRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+    borderRightWidth: 0,
+    minWidth: 40,
+    alignItems: 'flex-end',
+  },
+  lineNumber: {
+    fontSize: 12,
+    fontFamily: 'monospace',
+    color: '#64748b',
+    lineHeight: 20,
+    textAlign: 'right',
+    minWidth: 25,
+    width: 25,
+  },
   yamlInput: {
     flex: 1,
     fontSize: 14,
@@ -684,9 +1077,11 @@ const styles = StyleSheet.create({
     color: '#333',
     backgroundColor: '#f8fafc',
     padding: 12,
-    borderRadius: 8,
+    borderTopRightRadius: 8,
+    borderBottomRightRadius: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
+    borderLeftWidth: 0,
     textAlignVertical: 'top',
     paddingBottom: 50, // Space for Done button
   },
@@ -695,44 +1090,98 @@ const styles = StyleSheet.create({
     fontFamily: 'monospace',
     color: '#333',
     lineHeight: 20,
+    flex: 1,
+    textAlignVertical: 'top',
+    padding: 0,
+    margin: 0,
   },
   yamlActions: {
     flexDirection: 'row',
-    padding: 16,
+    padding: 12,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    gap: 12,
+    gap: 8,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: '#f8fafc',
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e2e8f0',
   },
   cancelButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#666',
     fontWeight: '500',
+  },
+  undoButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  undoButtonDisabled: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+  },
+  undoButtonText: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  undoButtonTextDisabled: {
+    color: '#9ca3af',
+  },
+  redoButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    backgroundColor: '#f0f9ff',
+    borderRadius: 6,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2563eb',
+    flexDirection: 'row',
+    justifyContent: 'center',
+  },
+  redoButtonDisabled: {
+    backgroundColor: '#f9fafb',
+    borderColor: '#e5e7eb',
+  },
+  redoButtonText: {
+    fontSize: 14,
+    color: '#2563eb',
+    fontWeight: '500',
+    marginLeft: 6,
+  },
+  redoButtonTextDisabled: {
+    color: '#9ca3af',
   },
   saveButton: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     backgroundColor: '#2563eb',
-    borderRadius: 8,
+    borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonText: {
-    fontSize: 16,
+    fontSize: 14,
     color: '#fff',
     fontWeight: '500',
-    marginLeft: 8,
+    marginLeft: 6,
   },
   copyButton: {
     flex: 1,

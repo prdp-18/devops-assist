@@ -249,6 +249,15 @@ export class AuthService {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`API request failed: ${response.status} ${response.statusText}`, errorText);
+      
+      // If we get a 401 Unauthorized, the token is invalid/expired
+      if (response.status === 401) {
+        console.log('Token expired or invalid (401), clearing stored token');
+        await this.clearStoredToken();
+        // Throw a specific error that can be caught by the app
+        throw new Error('TOKEN_EXPIRED');
+      }
+      
       throw new Error(`Failed to fetch ${endpoint.split('/').pop()}: ${response.status}`);
     }
 

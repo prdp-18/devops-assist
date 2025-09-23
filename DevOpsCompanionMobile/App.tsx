@@ -17,6 +17,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 // Import services
 import { AuthService } from './src/services/AuthService';
 import { BiometricService } from './src/services/BiometricService';
+import { ErrorHandler } from './src/services/ErrorHandler';
 
 // Types
 type RootStackParamList = {
@@ -104,6 +105,8 @@ export default function App() {
 
   useEffect(() => {
     checkAuthentication();
+    // Register global logout function for error handling
+    ErrorHandler.setGlobalLogout(handleLogout);
   }, []);
 
   const checkAuthentication = async () => {

@@ -448,7 +448,7 @@ export class GKEService {
   static async getServices(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
     try {
       const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/services?cluster_location=${clusterLocation}`
+        `/api/gcp/clusters/${clusterName}/services?cluster_location=${clusterLocation}&namespace=${namespace}`
       );
       return response;
     } catch (error) {
@@ -463,7 +463,7 @@ export class GKEService {
   static async getIngresses(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
     try {
       const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/ingresses?cluster_location=${clusterLocation}`
+        `/api/gcp/clusters/${clusterName}/ingresses?cluster_location=${clusterLocation}&namespace=${namespace}`
       );
       return response;
     } catch (error) {
@@ -478,7 +478,7 @@ export class GKEService {
   static async getSecrets(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
     try {
       const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/secrets?cluster_location=${clusterLocation}`
+        `/api/gcp/clusters/${clusterName}/secrets?cluster_location=${clusterLocation}&namespace=${namespace}`
       );
       return response;
     } catch (error) {
@@ -493,7 +493,7 @@ export class GKEService {
   static async getServiceAccounts(clusterName: string, clusterLocation: string, namespace: string): Promise<any[]> {
     try {
       const response = await AuthService.authenticatedRequest(
-        `/api/gcp/clusters/${clusterName}/namespaces/${namespace}/service-accounts?cluster_location=${clusterLocation}`
+        `/api/gcp/clusters/${clusterName}/service-accounts?cluster_location=${clusterLocation}&namespace=${namespace}`
       );
       return response;
     } catch (error) {

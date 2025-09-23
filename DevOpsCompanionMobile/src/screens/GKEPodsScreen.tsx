@@ -11,11 +11,14 @@ import {
   Modal,
   ScrollView,
   ActivityIndicator,
+  TextInput,
 } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { GKEService } from '../services/GKEService';
 import { BiometricService } from '../services/BiometricService';
+import { ErrorHandler } from '../services/ErrorHandler';
 import StatusBadge from '../components/StatusBadge';
 import LoadingIndicator from '../components/LoadingIndicator';
 import EmptyState from '../components/EmptyState';
@@ -37,6 +40,7 @@ interface GKEPodsScreenProps {
   namespace: string;
   onBack: () => void;
   onNavigateToAdvanced?: (resourceType: 'deployments' | 'services' | 'ingresses' | 'secrets' | 'service-accounts') => void;
+  initialPods?: GKEPod[]; // Optional initial pod data to avoid duplicate API calls
 }
 
 export default function GKEPodsScreen({ 
@@ -44,7 +48,8 @@ export default function GKEPodsScreen({
   location, 
   namespace, 
   onBack,
-  onNavigateToAdvanced 
+  onNavigateToAdvanced,
+  initialPods 
 }: GKEPodsScreenProps) {
   const [pods, setPods] = useState<GKEPod[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -113,7 +118,22 @@ export default function GKEPodsScreen({
       console.log('GKEPodsScreen: Loading pods for cluster:', clusterName, 'namespace:', namespace, 'location:', location);
       
       let data: GKEPod[];
-      if (namespace === 'all') {
+      
+      // If we have initial pods and we're not loading "all" namespaces, use them
+      if (initialPods && namespace !== 'all') {
+        console.log('GKEPodsScreen: Using initial pods data to avoid duplicate API call');
+        console.log('GKEPodsScreen: Initial pods structure:', initialPods.length, initialPods[0]);
+        console.log('GKEPodsScreen: Looking for namespace:', namespace);
+        data = initialPods.filter(pod => pod.namespace === namespace);
+        console.log('GKEPodsScreen: Filtered initial pods for namespace:', data.length, data);
+        
+        // If filtering returned 0 pods but we have initial pods, fall back to API call
+        if (data.length === 0 && initialPods.length > 0) {
+          console.log('GKEPodsScreen: Filtering returned 0 pods, falling back to API call');
+          data = await GKEService.getPods(clusterName, location, namespace);
+          console.log('GKEPodsScreen: API call returned:', data.length, data);
+        }
+      } else if (namespace === 'all') {
         // Load all pods across all namespaces
         console.log('GKEPodsScreen: Calling getAllPods API...');
         data = await GKEService.getAllPods(clusterName, location);
@@ -137,7 +157,7 @@ export default function GKEPodsScreen({
     } catch (error) {
       console.error('GKEPodsScreen: Failed to load pods:', error);
       console.error('GKEPodsScreen: Error details:', error);
-      Alert.alert('Error', `Failed to load pods: ${(error as Error).message}`);
+      await ErrorHandler.handleApiError(error as Error, 'Loading pods');
     } finally {
       setIsLoading(false);
     }
@@ -630,11 +650,39 @@ export default function GKEPodsScreen({
                 <Ionicons name="close" size={24} color="#666" />
               </TouchableOpacity>
             </View>
-            <ScrollView style={styles.modalBody}>
-              <Text style={styles.detailsText}>
-                {podDetails?.content || 'No details available'}
-              </Text>
-            </ScrollView>
+            <View style={styles.modalBody}>
+              <TextInput
+                style={styles.detailsText}
+                value={podDetails?.content || 'No details available'}
+                editable={false}
+                multiline={true}
+                scrollEnabled={true}
+                textBreakStrategy="simple"
+                dataDetectorTypes={[]}
+                selectTextOnFocus={false}
+                selectionColor="#2563eb"
+              />
+            </View>
+            
+            {/* Copy Button for Logs */}
+            {podDetails?.type === 'logs' && (
+              <View style={styles.copyButtonContainer}>
+                <TouchableOpacity
+                  style={styles.copyButton}
+                  onPress={async () => {
+                    try {
+                      await Clipboard.setStringAsync(podDetails.content);
+                      Alert.alert('Success', 'Logs copied to clipboard!');
+                    } catch (error) {
+                      Alert.alert('Error', 'Failed to copy logs');
+                    }
+                  }}
+                >
+                  <Ionicons name="copy" size={16} color="#fff" />
+                  <Text style={styles.copyButtonText}>Copy All Logs</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -792,6 +840,10 @@ const styles = StyleSheet.create({
     color: '#333',
     fontFamily: 'monospace',
     lineHeight: 20,
+    flex: 1,
+    textAlignVertical: 'top',
+    padding: 0,
+    margin: 0,
   },
   advancedOperationsContainer: {
     backgroundColor: '#fff',
@@ -856,5 +908,26 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 2,
     textAlign: 'center',
+  },
+  copyButtonContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  copyButton: {
+    backgroundColor: '#2563eb',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  copyButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginLeft: 8,
   },
 });
