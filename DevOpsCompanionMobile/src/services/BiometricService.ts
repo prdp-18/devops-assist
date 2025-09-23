@@ -8,6 +8,13 @@ export class BiometricService {
     try {
       const hasHardware = await LocalAuthentication.hasHardwareAsync();
       const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const availableTypes = await this.getAvailableTypes();
+      
+      console.log('Biometric availability check:');
+      console.log('- Has hardware:', hasHardware);
+      console.log('- Is enrolled:', isEnrolled);
+      console.log('- Available types:', availableTypes);
+      
       return hasHardware && isEnrolled;
     } catch (error) {
       console.error('Biometric availability check failed:', error);
@@ -39,13 +46,19 @@ export class BiometricService {
         throw new Error('Biometric authentication not available');
       }
 
+      // Check what biometric types are available
+      const availableTypes = await this.getAvailableTypes();
+      console.log('Available biometric types:', availableTypes);
+
       const result = await LocalAuthentication.authenticateAsync({
         promptMessage: reason,
         cancelLabel: 'Cancel',
         fallbackLabel: 'Use Passcode',
-        disableDeviceFallback: false,
+        disableDeviceFallback: true, // Force biometric first, don't allow immediate passcode fallback
+        requireConfirmation: true, // Require user confirmation for Face ID
       });
 
+      console.log('Biometric authentication result:', result);
       return result.success;
     } catch (error) {
       console.error('Biometric authentication failed:', error);
@@ -58,7 +71,37 @@ export class BiometricService {
    */
   static async authenticateForCriticalAction(action: string): Promise<boolean> {
     const reason = `Confirm ${action} operation`;
+    
+    // Try Face ID first if available
+    const isFaceIDAvailable = await this.isFaceIDAvailable();
+    if (isFaceIDAvailable) {
+      console.log('Face ID is available, using Face ID authentication');
+      return await this.authenticateWithFaceID(reason);
+    }
+    
+    // Fallback to general biometric authentication
     return await this.authenticate(reason);
+  }
+
+  /**
+   * Authenticate specifically with Face ID (iOS)
+   */
+  static async authenticateWithFaceID(reason: string): Promise<boolean> {
+    try {
+      const result = await LocalAuthentication.authenticateAsync({
+        promptMessage: reason,
+        cancelLabel: 'Cancel',
+        fallbackLabel: 'Use Passcode',
+        disableDeviceFallback: true, // Force Face ID first
+        requireConfirmation: true, // Show Face ID confirmation
+      });
+
+      console.log('Face ID authentication result:', result);
+      return result.success;
+    } catch (error) {
+      console.error('Face ID authentication failed:', error);
+      return false;
+    }
   }
 
   /**
