@@ -346,8 +346,10 @@ export default function GKEAdvancedOperationsScreen({
         animationType="slide"
         onRequestClose={() => setYamlModalVisible(false)}
       >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
+        <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
                 {isEditingYaml ? 'Edit' : 'View'} YAML
@@ -364,29 +366,27 @@ export default function GKEAdvancedOperationsScreen({
             </View>
             <ScrollView style={styles.modalBody}>
               {isEditingYaml ? (
-                <TouchableWithoutFeedback onPress={() => Keyboard.dismiss()}>
-                  <View style={styles.textInputContainer}>
-                    <TextInput
-                      ref={textInputRef}
-                      style={styles.yamlInput}
-                      value={yamlContent}
-                      onChangeText={setYamlContent}
-                      multiline
-                      textAlignVertical="top"
-                      fontFamily="monospace"
-                      onSubmitEditing={() => {
-                        // Return key adds newline
-                        setYamlContent(prev => prev + '\n');
-                      }}
-                      returnKeyType="default"
-                      blurOnSubmit={false}
-                      keyboardType="default"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      enablesReturnKeyAutomatically={false}
-                    />
-                  </View>
-                </TouchableWithoutFeedback>
+                <View style={styles.textInputContainer}>
+                  <TextInput
+                    ref={textInputRef}
+                    style={styles.yamlInput}
+                    value={yamlContent}
+                    onChangeText={setYamlContent}
+                    multiline
+                    textAlignVertical="top"
+                    fontFamily="monospace"
+                    onSubmitEditing={() => {
+                      // Return key adds newline
+                      setYamlContent(prev => prev + '\n');
+                    }}
+                    returnKeyType="default"
+                    blurOnSubmit={false}
+                    keyboardType="default"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    enablesReturnKeyAutomatically={false}
+                  />
+                </View>
               ) : (
                 <Text style={styles.yamlText}>
                   {yamlContent}
@@ -434,8 +434,10 @@ export default function GKEAdvancedOperationsScreen({
                 </TouchableOpacity>
               </View>
             )}
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </SafeAreaView>
   );
@@ -597,10 +599,6 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
     textAlignVertical: 'top',
     paddingBottom: 50, // Space for Done button
-  },
-  modalContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
   },
   yamlText: {
     fontSize: 14,
