@@ -10,6 +10,7 @@ import {
   Platform,
   Modal,
   ScrollView,
+  ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -53,6 +54,12 @@ export default function GKEPodsScreen({
   const [podDetailsModalVisible, setPodDetailsModalVisible] = useState(false);
   const [podDetails, setPodDetails] = useState<any>(null);
   const [showAdvancedOperations, setShowAdvancedOperations] = useState(false);
+  
+  // Loading states for pod operations
+  const [isRestartingPod, setIsRestartingPod] = useState(false);
+  const [isScalingDeployment, setIsScalingDeployment] = useState(false);
+  const [isDescribingPod, setIsDescribingPod] = useState(false);
+  const [isViewingLogs, setIsViewingLogs] = useState(false);
 
   const getAgeFromTimestamp = (timestamp: string): string => {
     try {
@@ -151,6 +158,8 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
+      setIsRestartingPod(true);
+      
       // Check if biometric authentication is available
       const isBiometricAvailable = await BiometricService.isAvailable();
       
@@ -186,7 +195,7 @@ export default function GKEPodsScreen({
       try {
         // Call restart pod API
         await GKEService.restartPod(clusterName, location, selectedPod.namespace, selectedPod.name);
-        Alert.alert('Success', 'Pod restart initiated');
+        Alert.alert('Success', 'Pod restart initiated successfully');
         setOptionsModalVisible(false);
         loadPods(); // Refresh the list
       } catch (error) {
@@ -194,6 +203,8 @@ export default function GKEPodsScreen({
       }
     } catch (error) {
       Alert.alert('Error', `Failed to restart pod: ${(error as Error).message}`);
+    } finally {
+      setIsRestartingPod(false);
     }
   };
 
@@ -201,12 +212,18 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
+      setIsViewingLogs(true);
+      console.log('GKEPodsScreen: Starting get pod logs for:', selectedPod.name);
       const logs = await GKEService.getPodLogs(clusterName, location, selectedPod.namespace, selectedPod.name);
+      console.log('GKEPodsScreen: Received logs:', logs.length, 'characters');
       setPodDetails({ type: 'logs', content: logs });
       setPodDetailsModalVisible(true);
       setOptionsModalVisible(false);
     } catch (error) {
+      console.error('GKEPodsScreen: Get pod logs error:', error);
       Alert.alert('Error', `Failed to get pod logs: ${(error as Error).message}`);
+    } finally {
+      setIsViewingLogs(false);
     }
   };
 
@@ -214,6 +231,7 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
+      setIsDescribingPod(true);
       console.log('GKEPodsScreen: Starting describe pod for:', selectedPod.name);
       const details = await GKEService.describePod(clusterName, location, selectedPod.namespace, selectedPod.name);
       console.log('GKEPodsScreen: Received details:', details.length, 'characters');
@@ -224,6 +242,8 @@ export default function GKEPodsScreen({
     } catch (error) {
       console.error('GKEPodsScreen: Describe pod error:', error);
       Alert.alert('Error', `Failed to describe pod: ${(error as Error).message}`);
+    } finally {
+      setIsDescribingPod(false);
     }
   };
 
@@ -231,6 +251,7 @@ export default function GKEPodsScreen({
     if (!selectedPod) return;
     
     try {
+      setIsScalingDeployment(true);
       console.log('GKEPodsScreen: Getting deployment name for pod:', selectedPod.name);
       
       // Get deployment name from pod's owner references or labels
@@ -303,12 +324,15 @@ export default function GKEPodsScreen({
             onPress: async (replicaCount) => {
               if (replicaCount && !isNaN(parseInt(replicaCount))) {
                 try {
+                  setIsScalingDeployment(true);
                   await GKEService.scaleDeployment(clusterName, location, selectedPod.namespace, deploymentName, parseInt(replicaCount));
-                  Alert.alert('Success', `Deployment ${deploymentName} scaled to ${replicaCount} replicas`);
+                  Alert.alert('Success', `Deployment ${deploymentName} scaled to ${replicaCount} replicas successfully`);
                   setOptionsModalVisible(false);
                   loadPods(); // Refresh the list
                 } catch (error) {
                   Alert.alert('Error', `Failed to scale deployment: ${(error as Error).message}`);
+                } finally {
+                  setIsScalingDeployment(false);
                 }
               } else {
                 Alert.alert('Error', 'Please enter a valid number');
@@ -322,6 +346,8 @@ export default function GKEPodsScreen({
     } catch (error) {
       console.error('GKEPodsScreen: Error getting deployment name:', error);
       Alert.alert('Error', `Failed to get deployment name: ${(error as Error).message}`);
+    } finally {
+      setIsScalingDeployment(false);
     }
   };
 
@@ -485,32 +511,60 @@ export default function GKEPodsScreen({
             </View>
             <View style={styles.modalBody}>
               <TouchableOpacity
-                style={styles.optionButton}
+                style={[styles.optionButton, isRestartingPod && styles.optionButtonDisabled]}
                 onPress={handleRestartPod}
+                disabled={isRestartingPod}
               >
-                <Ionicons name="refresh" size={20} color="#2563eb" />
-                <Text style={styles.optionText}>Restart Pod</Text>
+                {isRestartingPod ? (
+                  <ActivityIndicator size="small" color="#2563eb" />
+                ) : (
+                  <Ionicons name="refresh" size={20} color="#2563eb" />
+                )}
+                <Text style={[styles.optionText, isRestartingPod && styles.optionTextDisabled]}>
+                  {isRestartingPod ? 'Restarting...' : 'Restart Pod'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.optionButton}
+                style={[styles.optionButton, isViewingLogs && styles.optionButtonDisabled]}
                 onPress={handleViewLogs}
+                disabled={isViewingLogs}
               >
-                <Ionicons name="document-text" size={20} color="#059669" />
-                <Text style={styles.optionText}>View Logs</Text>
+                {isViewingLogs ? (
+                  <ActivityIndicator size="small" color="#059669" />
+                ) : (
+                  <Ionicons name="document-text" size={20} color="#059669" />
+                )}
+                <Text style={[styles.optionText, isViewingLogs && styles.optionTextDisabled]}>
+                  {isViewingLogs ? 'Loading Logs...' : 'View Logs'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.optionButton}
+                style={[styles.optionButton, isDescribingPod && styles.optionButtonDisabled]}
                 onPress={handleDescribePod}
+                disabled={isDescribingPod}
               >
-                <Ionicons name="information-circle" size={20} color="#7c3aed" />
-                <Text style={styles.optionText}>Describe Pod</Text>
+                {isDescribingPod ? (
+                  <ActivityIndicator size="small" color="#7c3aed" />
+                ) : (
+                  <Ionicons name="information-circle" size={20} color="#7c3aed" />
+                )}
+                <Text style={[styles.optionText, isDescribingPod && styles.optionTextDisabled]}>
+                  {isDescribingPod ? 'Describing...' : 'Describe Pod'}
+                </Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={styles.optionButton}
+                style={[styles.optionButton, isScalingDeployment && styles.optionButtonDisabled]}
                 onPress={handleScaleDeployment}
+                disabled={isScalingDeployment}
               >
-                <Ionicons name="trending-up" size={20} color="#dc2626" />
-                <Text style={styles.optionText}>Scale Deployment</Text>
+                {isScalingDeployment ? (
+                  <ActivityIndicator size="small" color="#dc2626" />
+                ) : (
+                  <Ionicons name="trending-up" size={20} color="#dc2626" />
+                )}
+                <Text style={[styles.optionText, isScalingDeployment && styles.optionTextDisabled]}>
+                  {isScalingDeployment ? 'Scaling...' : 'Scale Deployment'}
+                </Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -686,6 +740,13 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 12,
     fontWeight: '500',
+  },
+  optionButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#f1f5f9',
+  },
+  optionTextDisabled: {
+    color: '#64748b',
   },
   detailsText: {
     fontSize: 14,

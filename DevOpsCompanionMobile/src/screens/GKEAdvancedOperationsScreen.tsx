@@ -14,6 +14,7 @@ import {
   Keyboard,
   KeyboardAvoidingView,
   TouchableWithoutFeedback,
+  ActivityIndicator,
 } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -63,6 +64,11 @@ export default function GKEAdvancedOperationsScreen({
   const [yamlContent, setYamlContent] = useState('');
   const [isEditingYaml, setIsEditingYaml] = useState(false);
   const textInputRef = useRef<TextInput>(null);
+  
+  // Loading states for advanced operations
+  const [isDownloadingYaml, setIsDownloadingYaml] = useState(false);
+  const [isEditingYamlFile, setIsEditingYamlFile] = useState(false);
+  const [isSavingYaml, setIsSavingYaml] = useState(false);
 
   useEffect(() => {
     loadResources();
@@ -117,6 +123,7 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource) return;
     
     try {
+      setIsDownloadingYaml(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       
       // Create filename based on resource type and name
@@ -132,7 +139,7 @@ export default function GKEAdvancedOperationsScreen({
           mimeType: 'text/yaml',
           dialogTitle: `Download ${filename}`,
         });
-        Alert.alert('Success', `Downloaded ${filename}`);
+        Alert.alert('Success', `Downloaded ${filename} successfully`);
       } else {
         // Fallback: copy to clipboard
         await Clipboard.setStringAsync(yaml);
@@ -142,6 +149,8 @@ export default function GKEAdvancedOperationsScreen({
       setActionsModalVisible(false);
     } catch (error) {
       Alert.alert('Error', `Failed to download YAML: ${(error as Error).message}`);
+    } finally {
+      setIsDownloadingYaml(false);
     }
   };
 
@@ -149,6 +158,7 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource) return;
     
     try {
+      setIsEditingYamlFile(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
       setIsEditingYaml(false); // Set to view mode
@@ -156,6 +166,8 @@ export default function GKEAdvancedOperationsScreen({
       setActionsModalVisible(false);
     } catch (error) {
       Alert.alert('Error', `Failed to get YAML: ${(error as Error).message}`);
+    } finally {
+      setIsEditingYamlFile(false);
     }
   };
 
@@ -163,6 +175,7 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource) return;
     
     try {
+      setIsEditingYamlFile(true);
       const yaml = await GKEService.getResourceYaml(clusterName, location, selectedResource.namespace, resourceType, selectedResource.name);
       setYamlContent(yaml);
       setIsEditingYaml(true);
@@ -170,6 +183,8 @@ export default function GKEAdvancedOperationsScreen({
       setActionsModalVisible(false);
     } catch (error) {
       Alert.alert('Error', `Failed to get YAML for editing: ${(error as Error).message}`);
+    } finally {
+      setIsEditingYamlFile(false);
     }
   };
 
@@ -177,6 +192,8 @@ export default function GKEAdvancedOperationsScreen({
     if (!selectedResource || !yamlContent) return;
     
     try {
+      setIsSavingYaml(true);
+      
       // Check if biometric authentication is available
       const isBiometricAvailable = await BiometricService.isAvailable();
       
@@ -216,6 +233,8 @@ export default function GKEAdvancedOperationsScreen({
       loadResources(); // Refresh the list
     } catch (error) {
       Alert.alert('Error', `Failed to update ${resourceType.slice(0, -1)}: ${(error as Error).message}`);
+    } finally {
+      setIsSavingYaml(false);
     }
   };
 
@@ -343,28 +362,49 @@ export default function GKEAdvancedOperationsScreen({
             </View>
             <View style={styles.modalBody}>
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, isEditingYamlFile && styles.actionButtonDisabled]}
                 onPress={handleViewYaml}
+                disabled={isEditingYamlFile}
               >
-                <Ionicons name="eye" size={20} color="#2563eb" />
-                <Text style={styles.actionText}>View YAML</Text>
+                {isEditingYamlFile ? (
+                  <ActivityIndicator size="small" color="#2563eb" />
+                ) : (
+                  <Ionicons name="eye" size={20} color="#2563eb" />
+                )}
+                <Text style={[styles.actionText, isEditingYamlFile && styles.actionTextDisabled]}>
+                  {isEditingYamlFile ? 'Loading...' : 'View YAML'}
+                </Text>
               </TouchableOpacity>
               
               <TouchableOpacity
-                style={styles.actionButton}
+                style={[styles.actionButton, isDownloadingYaml && styles.actionButtonDisabled]}
                 onPress={handleDownloadYaml}
+                disabled={isDownloadingYaml}
               >
-                <Ionicons name="download" size={20} color="#059669" />
-                <Text style={styles.actionText}>Download YAML</Text>
+                {isDownloadingYaml ? (
+                  <ActivityIndicator size="small" color="#059669" />
+                ) : (
+                  <Ionicons name="download" size={20} color="#059669" />
+                )}
+                <Text style={[styles.actionText, isDownloadingYaml && styles.actionTextDisabled]}>
+                  {isDownloadingYaml ? 'Downloading...' : 'Download YAML'}
+                </Text>
               </TouchableOpacity>
               
               {resourceType === 'deployments' && (
                 <TouchableOpacity
-                  style={styles.actionButton}
+                  style={[styles.actionButton, isEditingYamlFile && styles.actionButtonDisabled]}
                   onPress={handleEditResource}
+                  disabled={isEditingYamlFile}
                 >
-                  <Ionicons name="create" size={20} color="#2563eb" />
-                  <Text style={styles.actionText}>Edit Deployment</Text>
+                  {isEditingYamlFile ? (
+                    <ActivityIndicator size="small" color="#2563eb" />
+                  ) : (
+                    <Ionicons name="create" size={20} color="#2563eb" />
+                  )}
+                  <Text style={[styles.actionText, isEditingYamlFile && styles.actionTextDisabled]}>
+                    {isEditingYamlFile ? 'Loading...' : 'Edit Deployment'}
+                  </Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -438,14 +478,21 @@ export default function GKEAdvancedOperationsScreen({
                   <Text style={styles.cancelButtonText}>Cancel</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={styles.saveButton}
+                  style={[styles.saveButton, isSavingYaml && styles.saveButtonDisabled]}
                   onPress={() => {
                     Keyboard.dismiss();
                     handleSaveYaml();
                   }}
+                  disabled={isSavingYaml}
                 >
-                  <Ionicons name="save" size={16} color="#fff" />
-                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                  {isSavingYaml ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <Ionicons name="save" size={16} color="#fff" />
+                  )}
+                  <Text style={styles.saveButtonText}>
+                    {isSavingYaml ? 'Saving...' : 'Save Changes'}
+                  </Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -614,6 +661,17 @@ const styles = StyleSheet.create({
     color: '#333',
     marginLeft: 12,
     fontWeight: '500',
+  },
+  actionButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#f1f5f9',
+  },
+  actionTextDisabled: {
+    color: '#64748b',
+  },
+  saveButtonDisabled: {
+    opacity: 0.6,
+    backgroundColor: '#dc2626',
   },
   textInputContainer: {
     flex: 1,
