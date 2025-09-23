@@ -769,13 +769,17 @@ export default function GKEAdvancedOperationsScreen({
                 <View style={styles.textInputContainer}>
                   <View style={styles.yamlEditorContainer}>
                     {/* Line Numbers */}
-                    <View style={styles.lineNumbersContainer}>
+                    <ScrollView 
+                      style={styles.lineNumbersContainer}
+                      showsVerticalScrollIndicator={false}
+                      scrollEnabled={false}
+                    >
                       {yamlContent.split('\n').map((_, index) => (
                         <Text key={index} style={styles.lineNumber}>
                           {index + 1}
                         </Text>
                       ))}
-                    </View>
+                    </ScrollView>
                     {/* YAML Content */}
                     <TextInput
                       ref={textInputRef}
@@ -1052,14 +1056,15 @@ const styles = StyleSheet.create({
   lineNumbersContainer: {
     backgroundColor: '#f1f5f9',
     paddingVertical: 12,
-    paddingHorizontal: 6,
+    paddingHorizontal: 4,
     borderTopLeftRadius: 8,
     borderBottomLeftRadius: 8,
     borderWidth: 1,
     borderColor: '#e2e8f0',
     borderRightWidth: 0,
-    minWidth: 40,
-    alignItems: 'flex-end',
+    width: 30,
+    alignItems: 'center',
+    flex: 1,
   },
   lineNumber: {
     fontSize: 12,
@@ -1097,15 +1102,15 @@ const styles = StyleSheet.create({
   },
   yamlActions: {
     flexDirection: 'row',
-    padding: 12,
+    padding: 8,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
-    gap: 8,
+    gap: 6,
   },
   cancelButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     backgroundColor: '#f8fafc',
     borderRadius: 6,
     alignItems: 'center',
@@ -1113,14 +1118,14 @@ const styles = StyleSheet.create({
     borderColor: '#e2e8f0',
   },
   cancelButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '500',
   },
   undoButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     backgroundColor: '#f0f9ff',
     borderRadius: 6,
     alignItems: 'center',
@@ -1134,18 +1139,18 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   undoButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#2563eb',
     fontWeight: '500',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   undoButtonTextDisabled: {
     color: '#9ca3af',
   },
   redoButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     backgroundColor: '#f0f9ff',
     borderRadius: 6,
     alignItems: 'center',
@@ -1159,10 +1164,10 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   redoButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#2563eb',
     fontWeight: '500',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   redoButtonTextDisabled: {
     color: '#9ca3af',
@@ -1170,18 +1175,18 @@ const styles = StyleSheet.create({
   saveButton: {
     flex: 1,
     flexDirection: 'row',
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    paddingVertical: 6,
+    paddingHorizontal: 8,
     backgroundColor: '#2563eb',
     borderRadius: 6,
     alignItems: 'center',
     justifyContent: 'center',
   },
   saveButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#fff',
     fontWeight: '500',
-    marginLeft: 6,
+    marginLeft: 4,
   },
   copyButton: {
     flex: 1,
