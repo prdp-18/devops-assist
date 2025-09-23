@@ -114,6 +114,7 @@ export default function App() {
       
       if (token) {
         // Verify token is still valid
+        console.log('Verifying token validity...');
         const isValid = await AuthService.verifyToken(token);
         console.log('Token valid:', isValid);
         
@@ -121,14 +122,19 @@ export default function App() {
           setIsAuthenticated(true);
           console.log('User authenticated');
         } else {
+          console.log('Token expired or invalid, clearing stored token');
           await AuthService.clearStoredToken();
-          console.log('Token invalid, cleared');
+          setIsAuthenticated(false);
         }
       } else {
-        console.log('No token found');
+        console.log('No token found, user not authenticated');
+        setIsAuthenticated(false);
       }
     } catch (error) {
       console.error('Authentication check failed:', error);
+      // If verification fails, clear token and show login
+      await AuthService.clearStoredToken();
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }

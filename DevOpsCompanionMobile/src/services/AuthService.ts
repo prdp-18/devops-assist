@@ -124,17 +124,22 @@ export class AuthService {
   }
 
   /**
-   * Verify if token is still valid
+   * Verify if token is still valid by making a real API call
    */
   static async verifyToken(token: string): Promise<boolean> {
     try {
-      const response = await fetch(`${API_BASE_URL}/health`, {
+      // Use a lightweight API endpoint to verify token validity
+      const response = await fetch(`${API_BASE_URL}/api/instances?region=us-east-1`, {
         headers: {
           'Authorization': `Bearer ${token}`,
         },
       });
 
-      return response.ok;
+      console.log('Token verification response:', response.status);
+      
+      // Token is valid if we get 200 (success) or 500 (server error, but token is valid)
+      // Token is invalid if we get 401 (unauthorized)
+      return response.status !== 401;
     } catch (error) {
       console.error('Token verification failed:', error);
       return false;
